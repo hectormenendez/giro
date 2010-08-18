@@ -1,0 +1,13 @@
+»	[17/JUL/2010]	Que exista un directorio llamado pub, donde se generen archivos minificados, views de html
+	etc, para que se tomen como caché u opcionalmente, sea lo que se le entregue al cliente en caso de no pago
+
+»	[15/JUL/2010]	Tratar a las librerías como módulos independientes, es decir, que todos los archivos rela-
+	cionados esten contenidos en la misma carpeta. esto es, tomando en cuenta que el framework ahora abarcará
+	client y server side, o en otras palabras javascript y php.
+
+»	[15/JUL/2010]	 Hacer un changelog dinámico para que los clientes puedan saber el avance del proyecto y -
+	asi evitar incertidumbre en ellos. [depende de la idea anterior].
+
+»	[15/JUL/2010]	El framework tiene que ser autónomo, automatizado y administrable vía web. por lo que he 
+	visto y detectado, lo ideal sería que la db nativa fuese sqlite3. pensaba que XML era mejor opción pero se
+	me hace mas inseguro (aún le tengo que echar coco).

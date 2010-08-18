@@ -1,0 +1,11 @@
+--------
+v0.0.001
+--------
+×	Write a README file, describe framework's purpose.
+×	The only dir available for web users should be INC.
+×	Minimize the use of htaccess for redirects.
+×	send correct headers when echoing 403 errors.
+×	Implement the doxygen documentation system for better understanding of my code.
+×	Modify the way included libraries are organized. [check ideas]
+×	Use XMLs for config handling [or maybe sqlite databases] ponder it. [check ideas]
+×	Find a better way of sending 403s natively [check headers on all libs]
