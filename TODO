@@ -1,11 +1,32 @@
 --------
-v0.0.001
+v0.0.002
 --------
+
+×	Find a better way of sending 403s natively [check headers on all libs] [use htacces ENV]
+
+×	Files outside pub directory must not be accessible.
+
+×	Document library::_content, and re order it. [move it to bottom]
+
+×	Document library::option_set.
+
+×	library::_class_get when 'parent' is used return 'Library' instead of calling class. (matching 'extends').
+
+×	core::library() Add an extra option at core::config(), asking if they want to add an extra layer of 
+					security by "parsing" the libraries before actually including them. using core::parse();
+
+×	core::library()	Add the option to load several libraries at once, using an array of names.
+
+×	core::parse()	use tmp file to know when the file was modified & only check syntax then.
+
+
+--------
+v0.0.001 - These TODOs came from older frameworks.
+--------
+√	[TODO] I remember a native php method for the backslashing "hack" i'm using on index.php. fix it.
+√	Implement a documentation system for better understanding of the code.
 ×	Write a README file, describe framework's purpose.
-×	The only dir available for web users should be INC.
-×	Minimize the use of htaccess for redirects.
-×	send correct headers when echoing 403 errors.
-×	Implement the doxygen documentation system for better understanding of my code.
+×	Write a router class.
+×	Write an error class. [with correct headers being sent]
 ×	Modify the way included libraries are organized. [check ideas]
 ×	Use XMLs for config handling [or maybe sqlite databases] ponder it. [check ideas]
-×	Find a better way of sending 403s natively [check headers on all libs]
