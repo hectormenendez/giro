@@ -1,5 +1,20 @@
-v0.0.002 [20/AGO/10]
+v0.02 
 --------------------------------------------------------------------------------------------------------------
+[22/SEP/2010]
+-------------
+
+/TODO & /CHANGELOG			Changed log format and version numbering.
+
+/sys/core/core::library		Library folders support. The libraries can now be loaded from folders insde LIB,
+							Allowing them to be in more than one file. A constant LIB_{CLASSNAME} is created
+							holding the full path for that class.
+
+/sys/core/core::_contruct	Simple routing. Core now expects a script named main.php inside the APP 
+							directory, so the framework can be used [at least partially] from there.
+
+-------------
+[20/AGO/2010]
+-------------
 
 »	Most basic functionality added. [tested on PHPv5.3]
 
@@ -10,8 +25,10 @@ v0.0.002 [20/AGO/10]
 »	Simplified index.php core class will handle almost everything.
 
 --------------------------------------------------------------------------------------------------------------
-v0.0.001 [14/JUL/10] branch from v0.0.688 Rev 10 (14/APR/09) 
+v0.01 Branch from Original Framework v0.688 Rev 10 (14/APR/09) 
 --------------------------------------------------------------------------------------------------------------
+[14/JUL/2010] 
+-------------
 
 »	Finally found the lost branch [cyf]. replacing [gik] with it.
 

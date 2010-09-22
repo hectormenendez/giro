@@ -19,6 +19,10 @@ abstract class Core extends Library {
 		register_shutdown_function('Core::shutdown');
 		//	startup required libraries
 		foreach (self::config('startup') as $lib) self::library($lib);
+		//	Temporary routing, while a proper routing class is developed.
+		if (file_exists(APP.'main'.EXT)) return include(APP.'main'.EXT);
+		else echo "<h1 style='color:green;'>Framework loaded, but no controllers are available.</h1>";
+		exit(0);
 	}
 
 	/**
@@ -56,9 +60,12 @@ abstract class Core extends Library {
 		$c = strtolower($class);
 		if (in_array($c,self::$library)) return true;
 		if ($include!==true) return false;
-		//	A file must exist
-		if (!file_exists($lib=(LIBS.$c.EXT)))
+		//	The class must reside inside the libs or within a folder with the same name
+		//	the file has precedence over the directory.
+		if (!file_exists($lib=(LIBS.$c.EXT)) && !file_exists($lib=LIBS.$c.SLASH.$c.EXT))
 			return self::error(array('invalid_class',$class),false, $error, null);
+		// Create a constant holding the path for this Library.
+		define('LIB_'.strtoupper($c), str_ireplace($c.EXT, '', $lib));
 		//	include the file and flag it as loaded
 		include $lib;
 		self::$library[] = $c;
