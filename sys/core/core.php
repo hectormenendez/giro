@@ -1,5 +1,8 @@
 <?php
 
+define('_error', true);	 //	shows errors messages (bool) default:true
+define('_class', false); //	name of the calling class (mixed) false:auto, null:core
+
 abstract class Core extends Library {
 
 	private static $library		= array('core');	// don't modify

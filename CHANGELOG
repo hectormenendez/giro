@@ -1,5 +1,18 @@
+v0.0.002 [20/AGO/10]
+--------------------------------------------------------------------------------------------------------------
+
+»	Most basic functionality added. [tested on PHPv5.3]
+
+»	Public folder will now be named 'PUB', instead of 'INC'
+
+»	Using const DIRECTORY_SEPARATOR [renamed to SLASH] to hanlde slashes.
+ 
+»	Simplified index.php core class will handle almost everything.
+
+--------------------------------------------------------------------------------------------------------------
 v0.0.001 [14/JUL/10] branch from v0.0.688 Rev 10 (14/APR/09) 
 --------------------------------------------------------------------------------------------------------------
+
 »	Finally found the lost branch [cyf]. replacing [gik] with it.
 
 »	Excluded the Error class [gik] since it wasn't even legible. [TODO added]
@@ -7,7 +20,7 @@ v0.0.001 [14/JUL/10] branch from v0.0.688 Rev 10 (14/APR/09)
 »	Changed the default line width from 90 to 110 cols. Updated comments accordingly.
 
 »	I'm grabbing bits and pieces of h23 & gik, in order to have a minimal working FW and start this new	branch 
-	code-named:adast.
+	code-named:giro.
 
 »	Although this changelog says forked from v0.0.688, it should be v0.0.7 since I created	an unregistered  -
 	branch [calling the project gik.mx] adding some new logic to the way everything works. [shame on me].

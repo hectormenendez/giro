@@ -45,10 +45,7 @@ foreach ($_ENV as $k=>$v){
 }
 unset($root,$file,$k,$v);
 
-// -----------------------------------------------------------------------------------  SET CORE FUNCTIONALITY 
-
-define('_error', true);	 //	shows errors messages (bool) default:true
-define('_class', false); //	name of the calling class (mixed) false:auto, null:core
+// ------------------------------------------------------------------------------------  SET CORE FUNCTIONALITY 
 
 if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
 include(CORE.'library'.EXT);
