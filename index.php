@@ -27,34 +27,43 @@ define('IS_INC', count(get_included_files())>1? true : false);
 
 //	-----------------------------------------------------------------------------------------------  CONSTANTS
 
-$_ENV['BASE'] = str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_BASENAME));		//	This file
-$_ENV['ROOT'] = str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_DIRNAME)).SLASH;	//	This file's abs path
-$_ENV['SYS']  = $_ENV['ROOT'].'sys'.SLASH;											//	System
-$_ENV['APP']  = $_ENV['ROOT'].'app'.SLASH;											//	Applications
-$_ENV['PUB']  = $_ENV['ROOT'].'pub'.SLASH;											//	Public
-$_ENV['TMP']  = $_ENV['ROOT'].'tmp'.SLASH;											//	Temporary Files
-$_ENV['CORE'] = $_ENV['SYS'].'core'.SLASH;											//	Core Lib
-$_ENV['LIBS'] = $_ENV['SYS'].'libs'.SLASH;											//	Libraries
+// This file's name.
+define('BASE', str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_BASENAME)));
 
-foreach ($_ENV as $k=>$v){
+// Store these in a tmp array so they can be easily checked afterwards.
+$_E = array();
+$_E['ROOT'] = str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_DIRNAME)).SLASH;	//	This file's abs path
+$_E['SYS']  = $_E['ROOT'].'sys'.SLASH;											//	System
+$_E['APP']  = $_E['ROOT'].'app'.SLASH;											//	Applications
+$_E['PUB']  = $_E['ROOT'].'pub'.SLASH;											//	Public
+$_E['TMP']  = $_E['ROOT'].'tmp'.SLASH;											//	Temporary Files
+$_E['CORE'] = $_E['SYS'].'core'.SLASH;											//	Core Lib
+$_E['LIBS'] = $_E['SYS'].'libs'.SLASH;											//	Libraries
+
+foreach ($_E as $k=>$v){
 	if (!file_exists($v) && !is_dir($v)) error("$k path does not exist.");
 	define($k,$v);
 }
 
 define('EXT', BASE == ($ext = substr(BASE, strpos(BASE,'.')))? '' : $ext);			//	File extension
+
+#	these two must not be used when running from CLI.
 define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT)); 		//	This RELATIVE path
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);			//	Full URL
 
-unset($k,$v,$ext);
+unset($k,$v,$ext,$_E);
 
 // ---------------------------------------------------------------------------------------  START YOUR ENGINES 
 
 if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
-include(CORE.'library'.EXT);
-include(CORE.'core'.EXT);
+include_once CORE.'library'.EXT;
+include_once CORE.'core'.EXT;
 
-// This is it. Framework started baby!
+// Here's where the magin begins.
 Core::_construct();
+
+// Don't do anything more if this file was included. [to avoid infinite loops]
+if (IS_INC) return;
 
 //	Temporary routing, while a proper routing class is developed.
 if (file_exists(APP.'root'.EXT)) return include(APP.'root'.EXT);
