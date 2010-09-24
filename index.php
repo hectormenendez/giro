@@ -13,6 +13,9 @@ define('BMK', microtime(true));
 
 //	--------------------------------------------------------------------------------------  SUPPORTT CONSTANTS
 
+define('_error', true);	 //	shows errors messages (bool) default:true
+define('_class', false); //	name of the calling class (mixed) false:auto, null:core
+
 define('EXT', '.php');
 define('SLASH', DIRECTORY_SEPARATOR);
 define('ISCGI', function_exists('apache_get_modules')? false : true);
@@ -45,11 +48,21 @@ foreach ($_ENV as $k=>$v){
 }
 unset($root,$file,$k,$v);
 
-// ------------------------------------------------------------------------------------  SET CORE FUNCTIONALITY 
+// ---------------------------------------------------------------------------------------  START YOUR ENGINES 
 
 if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
 include(CORE.'library'.EXT);
 include(CORE.'core'.EXT);
+
+// This is it. Framework started baby!
+Core::_construct();
+
+//	Temporary routing, while a proper routing class is developed.
+if (file_exists(APP.'root'.EXT)) return include(APP.'root'.EXT);
+else echo "<h1 style='color:green;'>Framework loaded, but no controllers are available.</h1>";
+exit(0);
+
+// --------------------------------------------------------------------------------------------------  SUPPORT
 
 // a simple error handler [we'll use this until the error class is loaded]
 function error($msg='Core functionality missing.', $tit=false){

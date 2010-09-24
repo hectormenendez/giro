@@ -1,3 +1,20 @@
+v0.03
+--------------------------------------------------------------------------------------------------------------
+[24/SEP/2010]
+-------------
+
+×	Implement a rudimentary logger that echoes to terminal/syslog and to temp file.
+
+×	Detect if the framework is being loaded by CRON or the PHP binary.
+
+×	Improve CORE and LIB including, the error muting feature can be toggled with a constant [named DEBUG].
+
+×	Implement a mechanism to prevent external agents loading classes and/or libraries. 
+	EVERYTHING must be loaded from index.php [CORE].
+
+×	the _class and _error constants were a terrible idea. get rid of them. 
+	_error should be something like DEBUG, so the user can force the showing CORE errors.
+
 v0.02
 --------------------------------------------------------------------------------------------------------------
 [22/SEP/2010]

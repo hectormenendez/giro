@@ -1,3 +1,22 @@
+v0.03
+--------------------------------------------------------------------------------------------------------------
+[24/SEP/2010]
+-------------
+
+/index						Moved functionality back to index. Continuing with the last changes, I Moved those
+/CORE/core					annoying classes [_error and _class] back to index.php. Added a TODO for them.
+							Also the pseudo-constructor calling was moved back to index.
+
+/index 						Moved simple routing fix. I've always assumed the framework would always be loaded
+CORE/core::_construct		via a web browser, hence the use of html tags in error messages sent to the user; 
+							turns out this was a mistake, since there are times it can be loaded from terminal
+							or CRON [a recent application I made does this]; In order to maintain readability 
+							and coherence, I moved the fix inside index.php.
+							the CORE stays
+
+/CODESTYLE					Added it to remember how to maintain a somewhat constant style when coding.
+
+--------------------------------------------------------------------------------------------------------------
 v0.02 
 --------------------------------------------------------------------------------------------------------------
 [22/SEP/2010]

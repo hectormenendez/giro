@@ -1,8 +1,5 @@
 <?php
 
-define('_error', true);	 //	shows errors messages (bool) default:true
-define('_class', false); //	name of the calling class (mixed) false:auto, null:core
-
 abstract class Core extends Library {
 
 	private static $library		= array('core');	// don't modify
@@ -19,10 +16,6 @@ abstract class Core extends Library {
 		register_shutdown_function('Core::shutdown');
 		//	startup required libraries
 		foreach (self::config('startup') as $lib) self::library($lib);
-		//	Temporary routing, while a proper routing class is developed.
-		if (file_exists(APP.'main'.EXT)) return include(APP.'main'.EXT);
-		else echo "<h1 style='color:green;'>Framework loaded, but no controllers are available.</h1>";
-		exit(0);
 	}
 
 	/**
@@ -134,5 +127,3 @@ abstract class Core extends Library {
 		return $var;
 	}
 }
-//	Load pseudo construct
-Core::_construct();
