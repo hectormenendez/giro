@@ -16,37 +16,36 @@ define('BMK', microtime(true));
 define('_error', true);	 //	shows errors messages (bool) default:true
 define('_class', false); //	name of the calling class (mixed) false:auto, null:core
 
-define('EXT', '.php');
+// a safe shorthand for slashes
 define('SLASH', DIRECTORY_SEPARATOR);
-define('ISCGI', function_exists('apache_get_modules')? false : true);
+// Is apache running in CGI mode?
+define('IS_CGI', function_exists('apache_get_modules')? false : true);
+// Is the script is run from command line?
+define('IS_CLI', strpos(php_sapi_name(),'cli') !== false ? true : false);
+// is the framework being included or called directly?
+define('IS_INC', count(get_included_files())>1? true : false);
 
 //	-----------------------------------------------------------------------------------------------  CONSTANTS
-//	These constants will be used as environment variables, so store them in an array.
-//	$file 	= full path for this file.
-//	$root 	= document root of the server
-$v = 'DOCUMENT_ROOT';
-$file = str_replace('/',SLASH,$_SERVER['SCRIPT_FILENAME']);
-$root = str_replace('/',SLASH,isset($_SERVER[$v])?$_SERVER[$v]:substr($file,0,0-strlen($_SERVER['PHP_SELF'])));
-if (substr($root,-1)!=SLASH) $root.=SLASH; // add a trailing slash
 
-$_ENV = array();
-$_ENV['ROOT']	= pathinfo($file,PATHINFO_DIRNAME).SLASH;			//	ABSOLUTE path to this file
-$_ENV['FILE']	= pathinfo($file,PATHINFO_BASENAME);				//	The name of this file
-$_ENV['PATH']	= str_replace($root,SLASH,$_ENV['ROOT']);			//	RELATIVE path to this file
-$_ENV['URL']	= 'http://'.$_SERVER['HTTP_HOST'].$_ENV['PATH'];	//	framework's root URL
-$_ENV['APP']	= $_ENV['ROOT'].'app'.SLASH;						//	Application folder
-$_ENV['SYS']	= $_ENV['ROOT'].'sys'.SLASH;						//	System folder
-$_ENV['PUB']	= $_ENV['ROOT'].'pub'.SLASH;						
-$_ENV['TMP']	= $_ENV['ROOT'].'tmp'.SLASH;						//	Temporary Files *[set outside ROOT]
-$_ENV['CORE']	= $_ENV['SYS'].'core'.SLASH;						//	Core Folder
-$_ENV['LIBS']	= $_ENV['SYS'].'libs'.SLASH;						//	Libraries Folder
+$_ENV['BASE'] = str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_BASENAME));		//	This file
+$_ENV['ROOT'] = str_replace('/',SLASH,pathinfo(__FILE__,PATHINFO_DIRNAME)).SLASH;	//	This file's abs path
+$_ENV['SYS']  = $_ENV['ROOT'].'sys'.SLASH;											//	System
+$_ENV['APP']  = $_ENV['ROOT'].'app'.SLASH;											//	Applications
+$_ENV['PUB']  = $_ENV['ROOT'].'pub'.SLASH;											//	Public
+$_ENV['TMP']  = $_ENV['ROOT'].'tmp'.SLASH;											//	Temporary Files
+$_ENV['CORE'] = $_ENV['SYS'].'core'.SLASH;											//	Core Lib
+$_ENV['LIBS'] = $_ENV['SYS'].'libs'.SLASH;											//	Libraries
 
-$nopath = array('URL','PATH');
 foreach ($_ENV as $k=>$v){
-	if (!in_array($k,$nopath) && (!file_exists($v) && !is_dir($v))) error("$k path does not exist.");
+	if (!file_exists($v) && !is_dir($v)) error("$k path does not exist.");
 	define($k,$v);
 }
-unset($root,$file,$k,$v);
+
+define('EXT', BASE == ($ext = substr(BASE, strpos(BASE,'.')))? '' : $ext);			//	File extension
+define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT)); 		//	This RELATIVE path
+define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);			//	Full URL
+
+unset($k,$v,$ext);
 
 // ---------------------------------------------------------------------------------------  START YOUR ENGINES 
 
@@ -59,7 +58,8 @@ Core::_construct();
 
 //	Temporary routing, while a proper routing class is developed.
 if (file_exists(APP.'root'.EXT)) return include(APP.'root'.EXT);
-else echo "<h1 style='color:green;'>Framework loaded, but no controllers are available.</h1>";
+else error('Framework loaded, but no controllers are available'); 
+
 exit(0);
 
 // --------------------------------------------------------------------------------------------------  SUPPORT
@@ -76,6 +76,8 @@ function error($msg='Core functionality missing.', $tit=false){
 		if (!is_string($arg[$i])) $arg[$i] = $error[$i];
 	}
 	header('HTTP/1.1 500 Internal Server Error');
-	printf('<h1 style="color:red">%2$s</h1><h2>%1$s</h2>',$arg[0],$arg[1]);
+	# if run from command line, don't send html.
+	$msg = IS_CLI? '%2$s: %1$s'."\n" : '<h1 style="color:red">%2$s</h1><h2>%1$s</h2>';
+	printf($msg,$arg[0],$arg[1]);
 	exit(1);
 }

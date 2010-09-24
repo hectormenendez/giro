@@ -1,3 +1,14 @@
+v0.04  CLI Support enabled && rudimentary SQLite-Support
+--------------------------------------------------------------------------------------------------------------
+[24/SEP/2010]
+-------------
+
+/index						The framework can now run from CLI; some minor PATH compat issues were fixed;
+							some support constants were added; 
+
+/LIBS/db					Rudimentary SQLite2 support. This needs lots and lots of improvement. first alpha. 
+
+--------------------------------------------------------------------------------------------------------------
 v0.03
 --------------------------------------------------------------------------------------------------------------
 [24/SEP/2010]
