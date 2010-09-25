@@ -158,7 +158,7 @@ abstract class Library {
 	*
 	*	@param		class	string	Class name
 	**/
-	public static function class_get($class=false, $error=_E){
+	public static function class_get($class=false, $error=_error){
 		//	if string provided, verify if class exists.
 		if (is_string($class)){
 			if (!Core::library($class, false)) return self::error(array('invalid_class',$class),false,$error,null);

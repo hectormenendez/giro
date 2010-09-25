@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * CORE Library.
+ *
+ * @version		v2.0r2 [25/SEP/2010]
+ * @author 		Hector Menendez
+**/
 abstract class Core extends Library {
 
 	private static $library		= array('core');	// don't modify
@@ -40,30 +45,64 @@ abstract class Core extends Library {
 	}
 
 	/**
-	*	Library autoloader/checker. Used without arguments returns array of loaded libraries.
+	* Library autoloader/checker.
+	* Autodetermines where classes are located and make them available. runs pseudo-constructors if avail.
+	* Used without arguments returns array of loaded libraries.
 	*
-	*	@param	$class	string	The name of the class to load/check.
-	*	@param	$inclde	bool	Set to true if you don't want to load the class, but only check if exists.
-	*	@param	$error	bool	wether to send an error, or just return false.
+	* @note		Files have precedence over directories. 
+	*
+	* @param	string 	$class		The name of the class to load/check.
+	* @param	bool	$include	If set to false the method only checks if the files exist.
+	* @param	bool	$error		wether to send an error, or just return false.
+	*
+	* @version	v1.1 [25/SEP/2010]
+	* @log		If $class has keywords: Control/Model at the end, then try to load from APP folder, if not
+	*			found, fall back to original funcionality and try to load class from LIB.
+	*
+	* @todo 	Treat underscores as folders.
 	**/
 	public static function library($class=false, $include=true, $error=_error){
 		//	if no class specified return an array of loaded libraries.
 		if (!is_string($class)) return self::$library;
-		//	check wether the class has been loaded before or not.
-		$c = strtolower($class);
-		if (in_array($c,self::$library)) return true;
-		if ($include!==true) return false;
-		//	The class must reside inside the libs or within a folder with the same name
-		//	the file has precedence over the directory.
-		if (!file_exists($lib=(LIBS.$c.EXT)) && !file_exists($lib=LIBS.$c.SLASH.$c.EXT))
+		$class = strtolower($class);
+		//	check wether the class has been loaded before.
+		if (in_array($class,self::$library)) return true;
+		# Start looking.
+		$found = false;
+		//	if it is a Controller/Model  [Control = 7 chars; Model = 5]
+		if (strlen($class)>5 && (substr($class, -7) == ($t='control') || substr($class,-5) == ($t='model'))){
+			$name = str_replace($t, '', $class); # obtain real name
+			# Model should be : /APP/$app/model.EXT
+			if ($t=='model' && file_exists($lib=APP.$name.SLASH.'model'.EXT)) $found=true;
+			# Controller can be either /APP/$app.EXT or /APP/$app/$app.EXT
+			if ($t=='control'&&(file_exists($lib=APP.$name.EXT)||file_exists($lib=APP.$name.SLASH.$name.EXT)))
+				$found=true;
+			# Determine NAME.
+			if ($found)	$name = 'APP_'.$name;
+		} 
+		# check in APP
+		# now check if class is inside LIBS
+		if (!$found && (file_exists($lib=LIBS.$class.EXT) || file_exists($lib=LIBS.$class.SLASH.$class.EXT))){
+			$found = true;
+			$name = 'LIB_'.$class;
+		}
+		# Last Resort, check inside CORE [no constant declaration for this one]
+		if (!$found && file_exists($lib=CORE.$class)) $found = true;
+		# If the user only wants to check for class files existance.
+		if ($include === false) return $found;
+		# found you! flag this library as loaded
+		if ($found) {
+			include $lib;
+			# Define a constant for the LibraryPath
+			if (isset($name)&&defined($name=strtoupper($name))) define($name,pathinfo($lib,PATHINFO_DIRNAME));
+			self::$library[] = $class;
+		}
+		# but wait that does not mean we have a class declared in there. make sure we do.
+		# if the library was not found OR found but with no declared class. Send a bloody error.
+		if (!$found || ($found && !class_exists($class,false)))
 			return self::error(array('invalid_class',$class),false, $error, null);
-		// Create a constant holding the path for this Library.
-		define('LIB_'.strtoupper($c), str_ireplace($c.EXT, '', $lib));
-		//	include the file and flag it as loaded
-		include $lib;
-		self::$library[] = $c;
-		//	If the lib has a pseudo constructor, call it.
-		if (method_exists($c,'_construct')) call_user_func("$c::_construct");
+		# If the lib has a pseudo constructor, call it.
+		if (method_exists($class,'_construct')) call_user_func("$class::_construct");
 		return true;
 	}
 
