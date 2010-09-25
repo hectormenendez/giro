@@ -81,7 +81,7 @@ abstract class DB extends Library {
 		# return an array 
 		else if (false !== ($qry = @$db->query($sql,$type,$error))) {
 			# only the first element
-			if ($cmd = 'one') return $qry->fetch();
+			if ($cmd == 'one') return $qry->fetch();
 			# all elements
 			return $qry->fetchAll();
 		}

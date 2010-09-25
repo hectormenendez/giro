@@ -1,7 +1,10 @@
-v0.04  CLI Support updated.
+v0.04r2	DB Class bugfix.
 --------------------------------------------------------------------------------------------------------------
 [24/SEP/2010]
 -------------
+/LIBS/db					DB Class bugfix. db::query was returning one result instead of all, turns out it 
+							was because of a misspelled comparison operator. [= instead of ==]
+
 /index						CLI Support updated. Improved script a wee bit and made sure only CORE is called
 							when the framework is included.
 
