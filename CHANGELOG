@@ -1,5 +1,18 @@
-v0.04r3 Rewritten auto loader.
+v0.04r4 Application Handler; Autoloader Revised; CLI mode fix;
 --------------------------------------------------------------------------------------------------------------
+[29/SEP/2010]
+-------------
+
+CORE/application			Application Handler. This method will handle loading and instantiation of 
+							Models and Controllers, added Controller overrider,So a Model can be shared for 
+							more than one controller. [Useful for CLI standalone apps]
+
+CORE/core::library			Autoloader Revised. Turns out the approach I used was an overkill, moved functio-
+							nality to CORE/application.
+
+index						CLI mode fix. error() was sending a header even in terminal mode. Disabled it by
+							adding a conditional.
+
 [25/SEP/2010]
 -------------
 

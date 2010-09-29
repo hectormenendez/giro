@@ -4,8 +4,10 @@
  *
  * @version		v2.0r2 [25/SEP/2010]
  * @author 		Hector Menendez
-**/
+ */
 abstract class Core extends Library {
+
+	const _CONSTRUCT = '_construct'; # method that wll work as pseudo-constructor for abstract classes.
 
 	private static $library		= array('core');	// don't modify
 	private static $language	= false;
@@ -52,57 +54,41 @@ abstract class Core extends Library {
 	* @note		Files have precedence over directories. 
 	*
 	* @param	string 	$class		The name of the class to load/check.
-	* @param	bool	$include	If set to false the method only checks if the files exist.
+	* @param	bool	$checkonly	if true, won't load anything, just check for file existance.
 	* @param	bool	$error		wether to send an error, or just return false.
 	*
-	* @version	v1.1 [25/SEP/2010]
+	* @version	v2 [29/SEP/2010]
+	* @log		The last fix was not really working, so I rewritten the method again. Removed Controller/Model
+	*			functionallity, and moved it back to application::load. [it was an overkill here].
 	* @log		If $class has keywords: Control/Model at the end, then try to load from APP folder, if not
 	*			found, fall back to original funcionality and try to load class from LIB.
-	*
-	* @todo 	Treat underscores as folders.
 	**/
-	public static function library($class=false, $include=true, $error=_error){
-		//	if no class specified return an array of loaded libraries.
-		if (!is_string($class)) return self::$library;
-		$class = strtolower($class);
-		//	check wether the class has been loaded before.
-		if (in_array($class,self::$library)) return true;
-		# Start looking.
-		$found = false;
-		//	if it is a Controller/Model  [Control = 7 chars; Model = 5]
-		if (strlen($class)>5 && (substr($class, -7) == ($t='control') || substr($class,-5) == ($t='model'))){
-			$name = str_replace($t, '', $class); # obtain real name
-			# Model should be : /APP/$app/model.EXT
-			if ($t=='model' && file_exists($lib=APP.$name.SLASH.'model'.EXT)) $found=true;
-			# Controller can be either /APP/$app.EXT or /APP/$app/$app.EXT
-			if ($t=='control'&&(file_exists($lib=APP.$name.EXT)||file_exists($lib=APP.$name.SLASH.$name.EXT)))
-				$found=true;
-			# Determine NAME.
-			if ($found)	$name = 'APP_'.$name;
-		} 
-		# check in APP
-		# now check if class is inside LIBS
-		if (!$found && (file_exists($lib=LIBS.$class.EXT) || file_exists($lib=LIBS.$class.SLASH.$class.EXT))){
-			$found = true;
-			$name = 'LIB_'.$class;
-		}
-		# Last Resort, check inside CORE [no constant declaration for this one]
-		if (!$found && file_exists($lib=CORE.$class)) $found = true;
-		# If the user only wants to check for class files existance.
-		if ($include === false) return $found;
-		# found you! flag this library as loaded
-		if ($found) {
+	public static function library($name=false, $checkonly=false, $error=_error){
+		# if no name provided, just return loaded libraries array.
+		if (!is_string($name)) return self::$library;
+		$name = strtolower($name);
+		# no need to load an lready loaded lib, right?
+		if (in_array($name,self::$library)) return true;
+		# is it a CORE module?
+		if (file_exists($lib=CORE.$name.EXT)) $found = 'CORE';
+		# Check for file inside LIBS/name.EXT or LIBS/name/name.EXT
+		elseif ((file_exists($lib=LIBS.$name.EXT)||file_exists($lib=LIBS.$name.SLASH.$name.EXT)))
+			$found = 'LIB';
+		# Nothing? don't load anything then.
+		else $found = false;
+		# At this point we know if we found a library or not. if this is a checkonly call return state.
+		if ($checkonly) return $found? true : false;
+		# we found something, include it and define a constant holding its path.
+		if ($found){
 			include $lib;
-			# Define a constant for the LibraryPath
-			if (isset($name)&&defined($name=strtoupper($name))) define($name,pathinfo($lib,PATHINFO_DIRNAME));
-			self::$library[] = $class;
+			if (!defined($const=strtoupper($found.'_'.$name))) define($const,pathinfo($lib,PATHINFO_DIRNAME));
+			self::$library[] = $name;
 		}
-		# but wait that does not mean we have a class declared in there. make sure we do.
-		# if the library was not found OR found but with no declared class. Send a bloody error.
-		if (!$found || ($found && !class_exists($class,false)))
-			return self::error(array('invalid_class',$class),false, $error, null);
-		# If the lib has a pseudo constructor, call it.
-		if (method_exists($class,'_construct')) call_user_func("$class::_construct");
+		# send [or return] an error if the file was not found or if the correct class name is not set.
+		if (!$found || ($found==true && !class_exists($name,false)))
+			return self::error(array('invalid_class',$name),'autoloader',$error);
+		# finally, if the class has a static pseudo-constructor declared, call it.
+		if (method_exists($name,'_construct')) call_user_func("$name::_construct");
 		return true;
 	}
 

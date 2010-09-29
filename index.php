@@ -84,9 +84,11 @@ function error($msg='Core functionality missing.', $tit=false){
 		}
 		if (!is_string($arg[$i])) $arg[$i] = $error[$i];
 	}
-	header('HTTP/1.1 500 Internal Server Error');
-	# if run from command line, don't send html.
-	$msg = IS_CLI? '%2$s: %1$s'."\n" : '<h1 style="color:red">%2$s</h1><h2>%1$s</h2>';
+	if (IS_CLI)	$msg = '%2$s: %1$s'."\n";
+	else {
+		header('HTTP/1.1 500 Internal Server Error');
+		$msg = '<h1 style="color:red">%2$s</h1><h2>%1$s</h2>';
+	}
 	printf($msg,$arg[0],$arg[1]);
 	exit(1);
 }

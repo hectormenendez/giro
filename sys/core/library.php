@@ -148,7 +148,7 @@ abstract class Library {
 		//	we cannot send errors within this method (would generate recursion).
 		if (!$class = self::class_get($class,false)) $class = strtolower(__CLASS__);
 		//	if error library available, redirect error.
-		if (Core::library('error',true,false)) Error::show($msg, $tit, $class);
+		if (Core::library('error',false,false)) Error::show($msg, $tit, $class);
 		//	In case the library isn't available send a simple error (converting arrays to strings)
 		error($msg,$tit);
 	}
@@ -159,9 +159,10 @@ abstract class Library {
 	*	@param		class	string	Class name
 	**/
 	public static function class_get($class=false, $error=_error){
-		//	if string provided, verify if class exists.
+		//	if string provided, verify class files exist.
 		if (is_string($class)){
-			if (!Core::library($class, false)) return self::error(array('invalid_class',$class),false,$error,null);
+			if (!Core::library($class,true,false))
+				return self::error(array('invalid_class',$class),false,$error,null);
 			return $class;
 		}
 		//	find out the class name, unless null is provided.
