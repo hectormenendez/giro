@@ -69,6 +69,7 @@ abstract class Core extends Library {
 		$name = strtolower($name);
 		# no need to load an lready loaded lib, right?
 		if (in_array($name,self::$library)) return true;
+		$found = false;
 		# is it a CORE module?
 		if (file_exists($lib=CORE.$name.EXT)) $found = 'CORE';
 		# Check for file inside LIBS/name.EXT or LIBS/name/name.EXT
@@ -81,7 +82,8 @@ abstract class Core extends Library {
 		# we found something, include it and define a constant holding its path.
 		if ($found){
 			include $lib;
-			if (!defined($const=strtoupper($found.'_'.$name))) define($const,pathinfo($lib,PATHINFO_DIRNAME));
+			if (!defined($const=strtoupper($found.'_'.$name)))
+				define($const,pathinfo($lib,PATHINFO_DIRNAME).SLASH);
 			self::$library[] = $name;
 		}
 		# send [or return] an error if the file was not found or if the correct class name is not set.

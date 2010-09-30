@@ -27,6 +27,9 @@ abstract class Application extends Library {
 		if (file_exists($file=APP.$name.EXT)) $found = true;
 		elseif (file_exists($file=APP.$name.SLASH.$name.EXT)){
 			$found = true;
+			# make available a constant holding the full path for this app.
+			if (!defined($const='APP_'.strtoupper($name)))
+				define($const,pathinfo($file,PATHINFO_DIRNAME).SLASH);
 			# if an controller overrider exists, include it instead of default one.
 			if ($ctrl!==false && file_exists($file=APP.$name.SLASH.$ctrl.EXT)) 
 				$controller = $name.$ctrl.'control';
@@ -56,9 +59,9 @@ abstract class Application extends Library {
 
 }
 
-class Model extends Application {}
+class Model {}
 
-class Control extends Application {
+class Control {
 
 	public $model = null;
 

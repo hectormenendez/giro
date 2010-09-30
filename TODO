@@ -1,7 +1,9 @@
-v0.04r4
+v0.04r6
 --------------------------------------------------------------------------------------------------------------
 [29/SEP/2010]
 -------------
+√	CORE/Application. Change the name of the loader method, for something unique that a user is unlikely to
+	override. Or do like I did in etor.mx, don't extend Library in Control or Model.
 
 ×	ERROR backtracing is fundamental, it would speed up things like hell, implement it. NOW!
 
@@ -9,16 +11,11 @@ v0.04r4
 [24/SEP/2010]
 -------------
 ×	Change IDEAS to ROADMAP, translate it; complement it.
-
 ×	Implement a rudimentary logger that echoes to terminal/syslog and to temp file.
-
 √	Detect if the framework is being loaded by CRON or the PHP binary.
-
 ×	Improve CORE and LIB including, the error muting feature can be toggled with a constant [named DEBUG].
-
 ×	Implement a mechanism to prevent external agents loading classes and/or libraries. 
 	EVERYTHING must be loaded from index.php [CORE].
-
 ×	the _class and _error constants were a terrible idea. get rid of them. 
 	_error should be something like DEBUG, so the user can force the showing CORE errors.
 
