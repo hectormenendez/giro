@@ -145,7 +145,8 @@ abstract class Library {
 		//	all core methods have the option to hide erros and return false instead.
 		//	Since some of those return by reference, we need to do it here too, hence the variable $tmp
 		if ($error!==true) { $tmp = false; return $tmp; }
-		//	we cannot send errors within this method (would generate recursion).
+		//	Get the classname where the error is being generated.
+		//	[we cannot send an error from here, it would generate recursion]
 		if (!$class = self::class_get($class,false)) $class = strtolower(__CLASS__);
 		//	if error library available, redirect error.
 		if (Core::library('error',false,false)) Error::show($msg, $tit, $class);
@@ -159,6 +160,10 @@ abstract class Library {
 	*	@param		class	string	Class name
 	**/
 	public static function class_get($class=false, $error=_error){
+		# in some rare cases, the user will want to know the class name from the parent
+		# of the calling class. for those cases we use an offset. This param won't be declared since 
+		# thi sfunctionality is highly discouraged [it forces traversing with our custom method]
+		$offset = (count($args=func_get_args())==3)? $args[2] : 0;
 		//	if string provided, verify class files exist.
 		if (is_string($class)){
 			if (!Core::library($class,true,false))
@@ -168,9 +173,10 @@ abstract class Library {
 		//	find out the class name, unless null is provided.
 		if ($class!==null){
 			//	As of php 5.3 we have this amazing function easing the process a lot!
-			if (function_exists('get_called_class')) return strtolower(get_called_class());
-			//	Sadly 5.3< will have to find the name loading the calling file to an array and preg_matching
-			$class = self::_class_get();
+			if ($offset==0 && function_exists('get_called_class')) return strtolower(get_called_class());
+			//	Sadly 5.3< will have to find the name loading the calling file to an array 
+			//	and preg_matching line by line until it finds a class declaration.
+			$class = self::_class_get($offset);
 		}
 		//	if by now we don't have a class name, assume Core.
 		if (!is_string($class)){
@@ -179,48 +185,59 @@ abstract class Library {
 		}
 		return $class;
 	}
+
 	/**
 	*	IMPORTANT NOTE: I'm aware that using this method is not reliable and cpu intensive, but I haven't
 	*					found another way to mimic get_called_class' behaviour prior PHP 5.3.
 	*
 	**/
-	private static function _class_get(){
+	private static function _class_get($offset){
 		static $cache = array();
 		$vv = '[a-zA-Z\_][a-zA-Z0-9\_]+';
 		$bt = debug_backtrace();
-		//	use the first trace outside this file.
-		foreach($bt as $trace){
-			if ($trace['file'] === __FILE__) continue;
-			break;
+		$c = count($bt);
+		# find the first backtrace outsite this file.
+		for ($i=0; $i<$c; $i++) if (isset($bt[$i]['file']) && $bt[$i]['file'] !== __FILE__) break;
+		$j = $i;
+		if ($offset > 0 ){
+			# if given offset does not have a file declaration, find the nearest one, or send CORE.
+			$i+= $offset;
+			for(;$i<$c;$i++) if (isset($bt[$i]['file'])) break;
+			# if offset is out of bounds, or if we don't have info for it, revert to original.
+			if ($i>=($c-1)) $i=$j;
 		}
-		$l = $trace['line'];
-		$f = $trace['file'];
+		$func = $bt[$i]['function'];
+		$line = $bt[$i]['line'];
+		$file = $bt[$i]['file'];
 		//	if line in file has been parsed before, return cached class name.
 		//	this would help to save cpu when calling from a loop
-		if (isset($cache[$f][$l])) return $cache[$f][$l];
+		if (isset($cache[$file][$line])) return $cache[$file][$line];
 		//	getting the file contents is expensive, cache each file converted
-		if (isset($cache[$f]['array'])) $file = $cache[$f]['array'];
-		else $file = $cache[$f]['array'] = file($f);
+		if (isset($cache[$file]['array'])) $file = $cache[$file]['array'];
+		else $f = $cache[$file]['array'] = file($file);
 		//	if the specified line of code doesn't have a valid class call, force Core.
-		if (!preg_match('/('.$vv.')\:{2}'.$trace['function'].'/',$file[$l-1], $match)) return null;
+		if (!preg_match('/('.$vv.')(?:\:{2}|\-\>)'.$func.'/',$f[$line-1], $match)) return null;
 		$match = strtolower($match[1]);
 		//	matched declaration, but wait, is it self or parent?
-		if ($match=='self' || $match=='parent') {
+		if ($match =='this' || $match=='self' || $match=='parent') {
 			//	avoiding re-seeking for a class declaration
-			if (isset($cache[$f]['self'])) return $cache[$f]['self'];
-			$match = $cache[$f]['self'] = self::_class_seek($l, $file, $vv);
+			if (isset($cache[$file]['self'])) return $cache[$file]['self'];
+			$match = $cache[$file]['self'] = self::_class_seek($line, $f, $vv);
 		}
-		return $cache[$f][$l] = $match;
+		return $cache[$file][$line] = $match;
 	}
-	//	seeks upwards for a class declaration
-	private static function _class_seek($l, $file, &$preg){
-		$l--;
-		while ($l>0 && strpos($file[$l],'class')===false) {
-			$l--;
-		}
-		if ($l<=1) return null;
-		if (!preg_match('/^[\s]*class[\s]+('.$preg.')/si', $file[$l], $match))
-			return self::_class_seek($l, $file, $preg);
+
+	/**
+	 *	seeks upwards for a class declaration
+	**/
+	private static function _class_seek($line, $f, &$preg){
+		$line--;
+		# find upwards for a class declaration
+		while ($line>0 && strpos($f[$line],'class')===false) { $line--; }
+		if ($line<1) return null;
+		if (!preg_match('/^[\s]*class[\s]+('.$preg.')/si', $f[$line], $match))
+			return self::_class_seek($line, $f, $preg);
 		return strtolower($match[1]);
 	}
+
 }

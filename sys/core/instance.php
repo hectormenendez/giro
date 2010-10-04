@@ -13,7 +13,7 @@ abstract class Instance extends Library {
 	/**
 	 * Make sure everything needed is set, and returns itself by reference.
 	**/
-	public function &__construct(&$object=false){
+	public function &__construct(&$object = false){
 		$name = $this->__parent_name();
 		if (!is_object($object)) self::error("An object must be provided in $name");
 		$this->__object = &$object;

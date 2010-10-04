@@ -10,6 +10,8 @@ abstract class Core extends Library {
 	const _CONSTRUCT = '_construct'; # method that wll work as pseudo-constructor for abstract classes.
 
 	private static $library		= array('core');	// don't modify
+	private static $appload		= array();
+
 	private static $language	= false;
 	private static $charset		= false;
 
@@ -23,6 +25,17 @@ abstract class Core extends Library {
 		register_shutdown_function('Core::shutdown');
 		//	startup required libraries
 		foreach (self::config('startup') as $lib) self::library($lib);
+	}
+
+	/**
+	*	Run pseudo destructors [if declared] on our library.
+	**/
+	public static function shutdown(){
+		$library = array_reverse(self::$library);
+		foreach($library as $class){
+			if (method_exists($class,'_destruct')) call_user_func("$class::_destruct");
+		}
+		return;
 	}
 
 	/**
@@ -95,21 +108,67 @@ abstract class Core extends Library {
 	}
 
 	/**
-	*	Run pseudo destructors [if declared] on our library.
+	 * Application manager
+	 *
+	 * @version v2.1	[01/OCT/2010]
+	 * @author Hector Menendez
+	 *
+	 * @log		v2.1	[01/OCT/2010]		Moved to Core to avoid namespace conflicts.
+	 * @log		v2.0	[29/SEP/2010]		Rewritten the load method. It now handles the file loading as well.
+	 * @log		v1.0r2	[27/SEP/2010]		Added $ctrl, argument to override the control being called.
+	 * @log		v1.0	------------		Basic functionality.
 	**/
-	public static function shutdown(){
-		$library = array_reverse(self::$library);
-		foreach($library as $class){
-			if (method_exists($class,'_destruct')) call_user_func("$class::_destruct");
+	public static function application($name=false, $ctrl=false, $error=_error){
+		# Trigger autoloading of Application class.
+		if (!class_exists('application')) self::error('Application File missing');
+		# First determine if the user didn't send  a controller overrider. example:
+		# main::override = APP/main/override.php
+		$ctrl = false;
+		if (($pos = strpos($name=strtolower($name),'::'))!==false){
+			$ctrl = substr($name,$pos+2);
+			$name = substr($name,0,$pos);
 		}
-		return;
+		$model = false;
+		$found = false;
+		# Give priority to files over directories. meaning: APP/main.php will override APP/main/main.php
+		if (file_exists($file=APP.$name.EXT)) $found = true;
+		elseif (file_exists($file=APP.$name.SLASH.$name.EXT)){
+			$found = true;
+			# make available a constant holding the full path for this app.
+			if (!defined($const='APP_'.strtoupper($name)))
+				define($const,pathinfo($file,PATHINFO_DIRNAME).SLASH);
+			# if an controller overrider exists, include it instead of default one.
+			if ($ctrl!==false && file_exists($file=APP.$name.SLASH.$ctrl.EXT)) 
+				$controller = $name.$ctrl.'control';
+			else $controller = $name.'control';
+			// Check if there's a Model available. and if it hasn't been loaded yet.
+			if (file_exists($model=APP.$name.SLASH.'model'.EXT)){
+				if (!in_array($model, self::$appload)) include $model;
+				self::$appload[] = $model;
+				$model = $name.'Model';
+				if (class_exists($model,false)) $model = new $model;
+			} else $model = false;
+		}
+		# if no file was found, return an error.
+		if (!$found) return self::error('control_invalid',false,$error);
+		# Avoid loading the same controller more than once.
+		if (in_array($file,self::$appload)) return self::error('control_loaded',false,$error);
+		include $file;
+		self::$appload[] = $file;
+		# Make sure the class exists before trying to do anything.
+		if (!class_exists($controller,false)) return self::error('control_name',false,$error);
+		# Instantiate and run init method.
+		$controller =  new $controller($model);
+		$ctrl = $ctrl?$ctrl:$name;
+		$controller->$ctrl();
+		return true;
 	}
 
 	/**
 	*	Check syntax of php file before actually including it. (use it only when really really necessary)
 	*
 	*	@param	$file	mixed	Path of the file to include.
-	*	@param $inc		bool	include the file, or return evaluated code. (includes it by default)
+	*	@param	$inc	bool	include the file, or return evaluated code. (includes it by default)
 	**/
 	public static function parse($file, $return=false){
 		if (!file_exists($file)) return false;
