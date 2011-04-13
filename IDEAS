@@ -1,4 +1,7 @@
-»	[17/JUL/2010]	Que exista un directorio llamado pub, donde se generen archivos minificados, views de html
+»	[04/OCT/2010	El framework, debe manejarse con una Database Básica [SQLITE2] que pueda ser reempla-
+					zada por una librería. 
+
+�	[17/JUL/2010]	Que exista un directorio llamado pub, donde se generen archivos minificados, views de html
 	etc, para que se tomen como caché u opcionalmente, sea lo que se le entregue al cliente en caso de no pago
 
 »	[15/JUL/2010]	Tratar a las librerías como módulos independientes, es decir, que todos los archivos rela-

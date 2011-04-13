@@ -1,0 +1,2 @@
+<?php 
+core::application('main'); 
