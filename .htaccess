@@ -1,0 +1,15 @@
+
+
+<IfModule mod_rewrite.c>
+	RewriteEngine on
+	# These won't be treated as redirection
+	RewriteCond $1 !^(index\.php|pub|robots\.txt|favicon\.ico)
+	RewriteRule ^(.*)$ index.php/$1 [L]
+</IfModule>
+
+# Overwrites for remote server
+# variable is set apache2/envvars
+<IfDefine !TestingServer>
+	Action application/x-hg-php53 /cgi-sys/php53
+	AddHandler application/x-hg-php53 .php
+</IfDefine>
