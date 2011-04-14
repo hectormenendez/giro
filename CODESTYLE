@@ -1,8 +1,0 @@
-[24/SEP/2010]
--------------
-*	Only index.php can have code in the global scope, everything else should reside inside a class.
-
-*	If you are going to apply quick fixes the CORE, do it inside index.php.
-
-*	All classes must be written assuming they will be loaded FROM index.php [CORE] and they must implement
-	a mechanism to prevent any other behavior.
