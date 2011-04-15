@@ -23,6 +23,8 @@ abstract class Library {
 	 * Retrieves a key from the main config array, it detect the calling class
 	 * so you can only have to specify the key, and you're good to go.
 	 * If called with no arguments, retrieves the whole config array.
+	 *
+	 * @todo	Set keys from here
  	 */
 	public static function &config($key=false, $class=false){
 		$false = false;	

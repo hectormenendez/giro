@@ -3,6 +3,9 @@
 define('MEM', memory_get_usage());
 define('BMK', microtime(true));
 
+# this has to be 0 in a production server ALWAYS!
+define('DBG', 0);
+
 # Get rid of Winshit and PHP < 5.3 users.
 if ( 5.3 > (float)substr(phpversion(),0,3) )
 	error('PHP 5.3+= required');
@@ -22,11 +25,11 @@ define('IS_INC', count(get_included_files())>1? true : false);
 
 # I will handle my own errors thank you.
 # Enable all errors, setup our handlers, then disable everything back again.
-ini_set('display_errors', false);
+if (!DBG) ini_set('display_errors', false);
 error_reporting(-1);
 set_error_handler('handler');
 register_shutdown_function('handler', 'shutdown');
-error_reporting(0);
+if (!DBG) error_reporting(0);
 
 ########################################################################## PATHS
 

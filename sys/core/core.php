@@ -210,13 +210,11 @@ abstract class Core extends Library {
 	public static function error_show($type, $message, $file, $line, $trace){
 		if (!parent::config('error')) exit(2);
 		switch($type){
-			case E_ERROR:
-			case E_PARSE:
-			case E_CORE_ERROR:
-			case E_COMPILE_ERROR:
-			case E_USER_ERROR:
-				$txt = "Error";
-				break;
+			case E_ERROR:			$txt = "Engine Error";	break;
+			case E_PARSE:			$txt = "Parse Error";	break;
+			case E_CORE_ERROR:		$txt = "Core Error";	break;
+			case E_COMPILE_ERROR:	$txt = "Compile Error"; break;
+			case E_USER_ERROR: 		$txt = "Error"; 		break;
 			case E_WARNING:
 			case E_CORE_WARNING:
 			case E_WARNING:
@@ -246,10 +244,13 @@ abstract class Core extends Library {
 		$tt = array('file'=>$file, 'line'=>$line);
 		array_unshift($trace, $tt);
 		echo "\n<pre><table>\n";
+		#print_r($trace); die;
 		foreach($trace as $t){
-			$lnum = $t['line']-1;
+			if (!isset($t['file']) || !isset($t['line'])) continue;
 			$line = file($t['file']);
+			$lnum = $t['line']-1;
 			$line = trim($line[$lnum]);
+			if (!preg_match('/\w+/', $line)) continue;
 			$file = substr($t['file'], stripos($t['file'],PATH) + strlen(PATH));
 			echo "\t<tr><td class='file''>$file:$lnum</td><td>$line</td></tr>\n";
 		};

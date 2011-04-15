@@ -12,8 +12,6 @@
  */
 abstract class DB extends Library {
 
-	public static $debug = false;
-
 	/**
 	 * Database Loader
 	 * Returns a valid instance of a database, if nothing specified, use memmory
@@ -61,9 +59,9 @@ abstract class DB extends Library {
 			if (stripos($sql,'select') !== false)
 				throw new PDOException('SELECT connot be used in exec context.');
 			$exec = $instance->exec($sql);
-		} catch( PDOException $e ){
-			return self::$debug?  error($e->getMessage()) : 0;
 		}
+		catch( PDOException $e ){ return self::error($e); }
+		
 		return (int) $exec;
 	}
 
@@ -82,12 +80,16 @@ abstract class DB extends Library {
 		try {
 			$qry = null;
 			$qry = $instance->query($sql);
-		} catch( PDOException $e ){
-			return self::$debug?  error($e->getMessage()) : array();
 		}
-		return $qry->fetchAll();
+		catch( PDOException $e ){ return self::error($e); }
+		return ($qry)? $qry->fetchAll() : false;
 	}
 
+	private static function error(&$exception){
+		$e = $exception->getMessage();
+		$e = substr($e, strpos($e, ':') +1 );
+		return error($e);
+	}
 
 	private static function arguments(&$args){
 		$sql = array_shift($args);
