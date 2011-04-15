@@ -3,9 +3,6 @@
 define('MEM', memory_get_usage());
 define('BMK', microtime(true));
 
-# this has to be 0 in a production server ALWAYS!
-define('DBG', 0);
-
 # Get rid of Winshit and PHP < 5.3 users.
 if ( 5.3 > (float)substr(phpversion(),0,3) )
 	error('PHP 5.3+= required');
@@ -24,12 +21,12 @@ define('IS_INC', count(get_included_files())>1? true : false);
 ########################################################################## ERROR
 
 # I will handle my own errors thank you.
-# Enable all errors, setup our handlers, then disable everything back again.
-if (!DBG) ini_set('display_errors', false);
+# Enable all errors so our handlers take over. 
+
+#ini_set('display_errors', false); # Added obscurity, harder developing.
 error_reporting(-1);
 set_error_handler('handler');
 register_shutdown_function('handler', 'shutdown');
-if (!DBG) error_reporting(0);
 
 ########################################################################## PATHS
 
@@ -99,6 +96,8 @@ function handler($action = null, $msg = null){
 	# This is an error request then.
 	# But wait, we need to catch the "user".
 	switch($action){
+		case 1: return true; # Parse Error, just bypass default handler.
+		break;
 		case E_USER_ERROR:
 		case E_USER_WARNING:
 		case E_USER_NOTICE:
