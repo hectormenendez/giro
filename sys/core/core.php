@@ -202,4 +202,58 @@ abstract class Core extends Library {
 			error('File Not Found','404');
 		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
 	}
+	
+	/**
+	 * Show Error with Style
+	 * Do I really need to say more, b?
+	 */
+	public static function error_show($type, $message, $file, $line, $trace){
+		if (!parent::config('error')) exit(2);
+		switch($type){
+			case E_ERROR:
+			case E_PARSE:
+			case E_CORE_ERROR:
+			case E_COMPILE_ERROR:
+			case E_USER_ERROR:
+				$txt = "Error";
+				break;
+			case E_WARNING:
+			case E_CORE_WARNING:
+			case E_WARNING:
+			case E_COMPILE_WARNING:
+			case E_USER_WARNING:
+				$txt = "Warning";
+				break;
+			case E_NOTICE:
+			case E_USER_NOTICE:
+			case E_STRICT:
+				$txt = "Notice";
+				break;
+		}
+		$prop = array_shift($trace);
+		$class = isset($prop['class'])? $prop['class'] : '';
+		echo "<style>",
+			 "h1 { color:#333;  } ",
+			 "h1 span.Warning { color:#F60; } ",
+			 "h1 span.Error   { color:#F00; } ",
+			 "h1 span.Notice  { color:#06F; } ",
+			 "td { color:#444; }",
+			 "td.file { color:#300; text-align:right; font-size:.7em; padding-right:1em; line-height:1em; }",
+			 "</style>";
+
+		echo "\n<h1>$class <span class='$txt'>$txt</span></h1><h2>$message</h2>\n";
+		if (!parent::config('debug') || empty($trace)) exit(2);
+		$tt = array('file'=>$file, 'line'=>$line);
+		array_unshift($trace, $tt);
+		echo "\n<pre><table>\n";
+		foreach($trace as $t){
+			$lnum = $t['line']-1;
+			$line = file($t['file']);
+			$line = trim($line[$lnum]);
+			$file = substr($t['file'], stripos($t['file'],PATH) + strlen(PATH));
+			echo "\t<tr><td class='file''>$file:$lnum</td><td>$line</td></tr>\n";
+		};
+		echo "</table></pre>\n";
+		exit(2);
+	}
 }

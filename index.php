@@ -24,8 +24,8 @@ define('IS_INC', count(get_included_files())>1? true : false);
 # Enable all errors, setup our handlers, then disable everything back again.
 ini_set('display_errors', false);
 error_reporting(-1);
-register_shutdown_function('handler', 'shutdown');
 set_error_handler('handler');
+register_shutdown_function('handler', 'shutdown');
 error_reporting(0);
 
 ########################################################################## PATHS
@@ -56,7 +56,6 @@ define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);
 unset($k,$v,$ext,$_E);
 
-
 # if this file was included by another script, stop to avoid infinite loops.
 if (IS_INC) return;
 
@@ -66,8 +65,9 @@ if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
 include_once CORE.'library'.EXT;
 include_once CORE.'core'.EXT;
 Core::_construct();
+error('Classless');
 
-#exit(0);
+exit(0);
 
 ######################################################################## THE END
 
@@ -95,49 +95,39 @@ function handler($action = null, $msg = null){
 	}
 	# This is an error request then.
 	# But wait, we need to catch the "user".
-	$tit = '';
 	switch($action){
 		case E_USER_ERROR:
-			if (!$tit) $tit = 'Error';
 		case E_USER_WARNING:
-			if (!$tit) $tit = 'Warning';
 		case E_USER_NOTICE:
-			if (!$tit) $tit = 'Notice';
 			# Go back two steps ahead and capture file & line.
 			$bt = array_slice(debug_backtrace(true), 2);
 			$arg = array_shift($bt);
 			$arg = array($action, $msg, $arg['file'], $arg['line']);
-			break;
+		break;
 		default:
 			# only one step to forget
 			$bt = array_slice(debug_backtrace(true), 1);
-			$tit = 'Engine Error';
 			# since we cannot get a scope using backtace for our USER errors
 			# let's mantain everything coherent and unset it here too.
 			$arg = func_get_args();	
 			unset($arg[4]);
 	}
-	array_push($arg, $tit, $bt);
+	array_push($arg, $bt);
 	# Ok, we're all set, now, it's time to check if the actual error handling
 	# method exist. if so, send the friggin' error.
 	if (class_exists('Core',false) && method_exists('Core', 'error_show'))
 		call_user_func_array('Core::error_show', $arg);
 	# Or, simply show the title and the message.
-	if (IS_CLI)	$err = '%2$s: %1$s'."\n";
-	else {
-		header('HTTP/1.1 500 Internal Server Error');
-		$err = '<h1 style="color:red">%2$s</h1><h2>%1$s</h2>';
-	}
-	printf ($err, $arg[1], $arg[4]);
+	echo "Error : {$arg[1]}\n";
 	exit(2);
 }
 
-function error ($msg = 'Error'){
+function error ($msg = ''){
 	return call_user_func('handler', E_USER_ERROR, $msg);
 }
-function warning ($msg = 'Warning'){
+function warning ($msg = ''){
 	return call_user_func('handler', E_USER_WARNING, $msg);
 }
-function notice($msg = 'Notice'){
+function notice($msg = ''){
 	return call_user_func('handler', E_USER_NOTICE, $msg);
 }
