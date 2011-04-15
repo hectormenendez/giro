@@ -71,10 +71,13 @@ abstract class Core extends Library {
 	 *
 	 * @return [reference] [array] General configuration array.
 	 */
-	public static function &config_get($class=false){
+	public static function &config_get($class = false){
 		if (empty(self::$config)) self::$config = include(CORE.'config'.EXT);
-		if (is_string($class) && is_array(self::$config[$class]))
+		if (is_string($class)){
+			$false = false;
+			if (!isset(self::$config[$class])) return $false;
 			return self::$config[$class];
+		}
 		return self::$config;
 	}
 
@@ -209,6 +212,7 @@ abstract class Core extends Library {
 	 */
 	public static function error_show($type, $message, $file, $line, $trace){
 		if (!parent::config('error')) exit(2);
+		$debug = parent::config('debug');
 		switch($type){
 			case E_ERROR:			$txt = "Engine Error";	break;
 			case E_PARSE:			$txt = "Parse Error";	break;
@@ -229,7 +233,7 @@ abstract class Core extends Library {
 				break;
 		}
 		$prop = array_shift($trace);
-		$class = isset($prop['class'])? $prop['class'] : '';
+		$class = isset($prop['class']) && $debug? $prop['class'] : '';
 		echo "<style>",
 			 "h1 { color:#333;  } ",
 			 "h1 span.Warning { color:#F60; } ",
@@ -240,7 +244,7 @@ abstract class Core extends Library {
 			 "</style>";
 
 		echo "\n<h1>$class <span class='$txt'>$txt</span></h1><h2>$message</h2>\n";
-		if (!parent::config('debug') || empty($trace)) exit(2);
+		if (!$debug || empty($trace)) return self::error_exit($txt);
 		$tt = array('file'=>$file, 'line'=>$line);
 		array_unshift($trace, $tt);
 		echo "\n<pre><table>\n";
@@ -255,6 +259,11 @@ abstract class Core extends Library {
 			echo "\t<tr><td class='file''>$file:$lnum</td><td>$line</td></tr>\n";
 		};
 		echo "</table></pre>\n";
-		exit(2);
+		return self::error_exit($txt);
+	}
+
+	public static function error_exit($type){
+		if (stripos($type, 'notice') === false ) exit(2);
+		return true;
 	}
 }

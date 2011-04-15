@@ -27,7 +27,7 @@ define('IS_INC', count(get_included_files())>1? true : false);
 error_reporting(-1);
 set_error_handler('handler');
 register_shutdown_function('handler', 'shutdown');
-error_reporting(E_PARSE);
+#error_reporting('E_PARSE');
 
 ########################################################################## PATHS
 
