@@ -27,6 +27,7 @@ define('IS_INC', count(get_included_files())>1? true : false);
 error_reporting(-1);
 set_error_handler('handler');
 register_shutdown_function('handler', 'shutdown');
+error_reporting(E_PARSE);
 
 ########################################################################## PATHS
 
@@ -77,8 +78,7 @@ exit(0);
  *
  * @param	[bool] $shutdown	register_shutdown_function sends true.
  *
- * @todo	Learn how to determine the severity of error so the executio can be
- *			stopped accordingly, also, generate a title basd on it.
+ * @todo	Send the error type nam instead and use a content replacer.
  *
  * @note	Please don't use trigger errror, expect th unexpected.
  */
@@ -119,9 +119,17 @@ function handler($action = null, $msg = null){
 	# method exist. if so, send the friggin' error.
 	if (class_exists('Core',false) && method_exists('Core', 'error_show'))
 		call_user_func_array('Core::error_show', $arg);
-	# Or, simply show the title and the message.
-	echo "Error : {$arg[1]}\n";
-	exit(2);
+	# Or, fallback to  a simple error.
+	else {
+		# find out the error type string.
+		$type = get_defined_constants(true);
+		$type = array_search((int)$action, $type['Core'], true);
+		$file = substr($arg[2], (int)strrpos($arg[2], '/')).":{$arg[3]}";
+		if (!IS_CLI) echo '<pre>';
+		echo "$type: {$arg[1]}\t[".str_replace(SLASH,'', $file)."]\n";
+		if (!IS_CLI)echo '<pre>';
+		return false;
+	}
 }
 
 function error ($msg = ''){
