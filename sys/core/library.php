@@ -14,20 +14,8 @@ abstract class Library {
 	 *		 checking if the constat is defined. Anyways, ponder it later.
 	 */
 	public static function application(){
-		if (!defined('APPNAME')) parent::error('An application has not run yet');
+		if (!defined('APPNAME')) error('An application has not run yet');
 		return APPNAME;
-	}
-
-	/**
-	 * Error Manager.
-	 * This will eventually be an error manager, for now it's just a redirector
-	 * to a VERY simple function defined on ROOT/index.EXT.
-	 *
-	 * @param [string] $msg		Error Title.
-	 * @param [string] $title	Error Title.
-	 */
-	public static function error($msg=false, $title=false){
-		return error($msg, $title);
 	}
 
 	/**

@@ -18,7 +18,7 @@ abstract class Instance extends Library {
 	public function &__construct(&$object = false){
 		$name = $this->__parent_name();
 		if (!is_object($object))
-			self::error("An object must be provided as an instance of $name");
+			error("An object must be provided as an instance of $name");
 		$this->__object = &$object;
 		$this->__parent = new ReflectionClass($name);
 		return $this;
@@ -35,10 +35,8 @@ abstract class Instance extends Library {
 	 * @return void
 	**/
 	final public function __call($name,$args){
-		if (!is_callable("{$this->__parent->name}::$name")) 
-			call_user_func(
-				"{$this->__parent->name}::error","invalid_method: '$name'"
-			);
+		if (!is_callable("{$this->__parent->name}::$name"))
+			error("invalid method: '$name'");
 		return call_user_func_array(
 			"{$this->__parent->name}::$name",$this->__append_param($name,$args)
 		);
@@ -53,11 +51,13 @@ abstract class Instance extends Library {
 	 */
 	private function __parent_name(){
 		$dbt = debug_backtrace();
-		if (!isset($dbt[2]['class'])) self::error(__CLASS__.' was not called from a valid class.');
+		if (!isset($dbt[2]['class']))
+			error(__CLASS__.' was not called from a valid class.');
 		return $dbt[2]['class'];
 	}
 
 	/**
+	 * Parameter Appender
 	 * Append main object to the end of parameters in given method.
 	 *
 	 * @param string $name method name.

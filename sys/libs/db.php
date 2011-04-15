@@ -36,7 +36,7 @@ abstract class DB extends Library {
 			$dbo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 		} catch (PDOException $e){ 
-			parent::error('Unable to load the Database.');
+			error('Unable to load the Database.');
 		}
 		# wrap the database manager in our reflection instance and return it.
 		$instance = new dbInstance($dbo);
@@ -62,7 +62,7 @@ abstract class DB extends Library {
 				throw new PDOException('SELECT connot be used in exec context.');
 			$exec = $instance->exec($sql);
 		} catch( PDOException $e ){
-			return self::$debug?  parent::error($e->getMessage()) : 0;
+			return self::$debug?  error($e->getMessage()) : 0;
 		}
 		return (int) $exec;
 	}
@@ -83,7 +83,7 @@ abstract class DB extends Library {
 			$qry = null;
 			$qry = $instance->query($sql);
 		} catch( PDOException $e ){
-			return self::$debug?  parent::error($e->getMessage()) : array();
+			return self::$debug?  error($e->getMessage()) : array();
 		}
 		return $qry->fetchAll();
 	}
@@ -92,8 +92,8 @@ abstract class DB extends Library {
 	private static function arguments(&$args){
 		$sql = array_shift($args);
 		$ins = array_pop($args);
-		if (empty($sql) || !is_string($sql)) parent::error('Invalid SQL.');
-		if (!$ins instanceof PDO) parent::error('Missing DB instance.');
+		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
+		if (!$ins instanceof PDO) error('Missing DB instance.');
 		# format sql with remaining arguments.
 		$sql = sqlite_escape_string( vsprintf($sql, $args) );
 		return array(&$sql, &$ins);

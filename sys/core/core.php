@@ -27,7 +27,6 @@ abstract class Core extends Library {
 		self::$config = self::config_get();
 		self::$route_index = parent::config('route_index');
 		spl_autoload_register('self::library');
-		register_shutdown_function('Core::shutdown');
 		self::route();
 	}
 
@@ -59,7 +58,7 @@ abstract class Core extends Library {
 		if (in_array($name, self::$library)) return $si;
 		$found = file_exists($path=CORE.$name.EXT) ||
 				 file_exists($path=LIBS.$name.EXT);
-		if (!$found) parent::error("Library <u>$name</u> does not exist");
+		if (!$found) error("Library <u>$name</u> does not exist");
 		include $path;
 		if (method_exists($name,'_construct'))
 			call_user_func("$name::_construct");
@@ -87,7 +86,7 @@ abstract class Core extends Library {
 	 * @return [void] or sends error.
 	 */
 	private static function route(){
-		if (!self::$route_index) parent::error('Undefined Default Application');
+		if (!self::$route_index) error('Undefined Default Application');
 		$uri = self::route_uri_parse();
 		self::app_load($uri);
 	}
@@ -99,7 +98,7 @@ abstract class Core extends Library {
 	 */
 	private static function route_uri_parse($key='REQUEST_URI'){
 		if (!isset($_SERVER[$key]) || $_SERVER[$key]=='')
-			parent::error('The URI is unavailable [crap].');
+			error('The URI is unavailable [crap].');
 		# get rid of the path and file name [if any]
 		$uri = str_replace(PATH,'/',str_replace(BASE,'',$_SERVER[$key]));
 		# sanitize a little bit, by removing double slashes
@@ -150,8 +149,7 @@ abstract class Core extends Library {
 	 */
 	private static function &app_load($uri, $iserr=false){
 		# Trigger autoload for Application
-		if (!class_exists('application'))
-			parent::error('Application Library Missing');
+		if (!class_exists('application')) error('Application Library Missing');
 		foreach ($uri as $k=>$v) $$k = $v; # $ctrl, $args
 		if ($ctrl == '__index__') $ctrl = self::$route_index;
 		# Load the controller. [files have priority over directories]
@@ -178,8 +176,7 @@ abstract class Core extends Library {
 
 	private static function &app_include($name, $path, $args=array(), $model=null){
 		include $path;
-		if (!class_exists($name,false))
-			parent::error("Erroneus Declaration in $name");
+		if (!class_exists($name,false)) error("Erroneus Declaration in $name");
 		# if this is a controller and there's a model available, instantiate it.
 		$instance = new $name($model);
 		$method = str_replace('Model','',str_replace('Control','',$name));
@@ -193,17 +190,16 @@ abstract class Core extends Library {
 	 * 404 Router
 	 * Sends a 404 header to the browser.
 	 *
-	 * @todo This is currently sending 500, since parent::error modifies the heeader, fix this.
+	 * @todo This is currently sending 500, since error modifies the heeader.
 	 * @todo Move this method to the library and update all the references to it.
 	 */
 	public static function route_404($ctrl=false, $iserr=false){
 		header('HTTP/1.0 404 Not Found');
 		if ($ctrl == self::$route_index)
-			parent::error('Default Application Missing');
+			error('Default Application Missing');
 		# if there's an error controller load it. [avoiding recursion]
 		if ($iserr === true || !$error = parent::config('route_error'))
-			parent::error('File Not Found','404');
+			error('File Not Found','404');
 		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
 	}
-
 }

@@ -27,7 +27,7 @@ abstract class docs extends Library {
 		self::$control_cache = TMP.'all.'.__CLASS__;
 		self::$control_view = LIBS.__CLASS__.'.view'.EXT;
 		if (!file_exists(self::$control_view))
-			parent::error('Documentation View is missing.');
+			error('Documentation View is missing.');
 	}
 
 ######################################################################### PUBLIC
@@ -80,12 +80,12 @@ abstract class docs extends Library {
 		if (isset($a[1]) && !empty($a[1]) && !isset($m[$a[1]])) Core::route_404();
 
 		if (!isset($_POST['view']))
-			parent::error('This functionality is still missing','Warning!');
+			error('This functionality is still missing','Warning!');
 
 		if (!isset($a[1])) self::response_json($c);
 		elseif(isset($a[1])) self::response_json($m[$a[1]]);
 
-		parent::error("This should not happen in ".__METHOD__);
+		error("This should not happen in ".__METHOD__);
 		exit(2);
 	}
 
@@ -134,7 +134,7 @@ abstract class docs extends Library {
 	 * @return 
 	 */
 	public static function file($path=false){
-		if (!@file_exists($path)) parent::error('Invalid Path.');
+		if (!@file_exists($path)) error('Invalid Path.');
 		$classes = array();
 		$methods = array();
 		$cont = file_get_contents($path);
@@ -342,14 +342,14 @@ abstract class docs extends Library {
 
 	private static function &array_swap(&$array=false){
 		$m = '['.__METHOD__.']';
-		if (!is_array($array)) parent::error("An array is required. $m");
+		if (!is_array($array)) error("An array is required. $m");
 		$names = func_get_args();
 		array_shift($names);
-		if (empty($names)) parent::error("Replacement keys are needed. $m");
+		if (empty($names)) error("Replacement keys are needed. $m");
 		if (count($names) !== ($num=count($array)) ){
 			print_r($array);
 			print_r($names);
-			parent::error("$num Replacements are needed. $m");
+			error("$num Replacements are needed. $m");
 		}
 		$i = 0;
 		foreach($array as $key=>$val){
