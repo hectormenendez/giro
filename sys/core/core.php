@@ -8,8 +8,10 @@
  *
  * @log [2011|MAR|28]	Forked from GIRO 
  * @log [2011|APR|01] 	Implemented Basic URI & Routing handling 
+ * @log [2011|APR|14]	Changed application for app_load to avoid conflicts 
+ *						between the newly created method in Librarytodo
  *
- * @todo	Make sure the uri always ends with a slash.
+ * @.	Make sure the uri always ends with a slash.
  * @todo	find a way that very todo appears automagically in a file.
  *
  * @root
@@ -20,7 +22,6 @@ abstract class Core extends Library {
 	private static $library = array('core');
 	private static $route_index = false;
 	private static $application = array();
-
 
 	public static function _construct(){
 		self::$config = self::config_get();
@@ -88,7 +89,7 @@ abstract class Core extends Library {
 	private static function route(){
 		if (!self::$route_index) parent::error('Undefined Default Application');
 		$uri = self::route_uri_parse();
-		self::application($uri);
+		self::app_load($uri);
 	}
 
 	/**
@@ -135,7 +136,6 @@ abstract class Core extends Library {
 		return preg_replace('/[^'.$xtra.$char.']/','',$uri);
 	}
 
-
 	/**
 	 * Application Loader
 	 * Checks if an application and its dependant model exists for a given URI,
@@ -148,7 +148,7 @@ abstract class Core extends Library {
 	 *
 	 * @return [mixed][reference] Application controlller.
 	 */
-	private static function &application($uri, $iserr=false){
+	private static function &app_load($uri, $iserr=false){
 		# Trigger autoload for Application
 		if (!class_exists('application'))
 			parent::error('Application Library Missing');
@@ -171,12 +171,12 @@ abstract class Core extends Library {
 		$found = file_exists($path_model=APP.$ctrl.'.model'.EXT) ||
 				 file_exists($path_model=APP.$ctrl.SLASH.'model'.EXT);
 		if ($found)
-			$model = self::application_inc($ctrl.'Model', $path_model, $args);
+			$model = self::app_include($ctrl.'Model', $path_model, $args);
 		# instantiate controller and push the model as [last] argument
-		return self::application_inc($ctrl.'Control', $path_ctrl, $args, $model);
+		return self::app_include($ctrl.'Control', $path_ctrl, $args, $model);
 	}
 
-	private static function &application_inc($name, $path, $args=array(), $model=null){
+	private static function &app_include($name, $path, $args=array(), $model=null){
 		include $path;
 		if (!class_exists($name,false))
 			parent::error("Erroneus Declaration in $name");
@@ -203,7 +203,7 @@ abstract class Core extends Library {
 		# if there's an error controller load it. [avoiding recursion]
 		if ($iserr === true || !$error = parent::config('route_error'))
 			parent::error('File Not Found','404');
-		self::application(array('ctrl'=>$error, array($ctrl)), true);
+		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
 	}
 
 }

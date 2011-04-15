@@ -9,11 +9,8 @@ if (isset($_SERVER['SERVER_SOFTWARE']) && stripos($_SERVER['SERVER_SOFTWARE'],'w
 	error('Windows? really? ...fuck off.');
 
 # Disable errors until we have our error control class ready.
-error_reporting('E_ALL');
-ini_set('display_errors',0);
-
-# Kill magic quotes.(deprecated. should be removed in later versions).
-@set_magic_quotes_runtime(0);
+#error_reporting('E_ALL');
+#ini_set('display_errors',0);
 
 # a safe shorthand for slashes
 define('SLASH', DIRECTORY_SEPARATOR);

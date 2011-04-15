@@ -7,6 +7,18 @@
 abstract class Library {
 
 	/**
+	 * What's app?
+	 * Returns the currently running application name.
+	 *
+	 * @todo is this really necessary? I mean, using this is just a way of c
+	 *		 checking if the constat is defined. Anyways, ponder it later.
+	 */
+	public static function application(){
+		if (!defined('APPNAME')) parent::error('An application has not run yet');
+		return APPNAME;
+	}
+
+	/**
 	 * Error Manager.
 	 * This will eventually be an error manager, for now it's just a redirector
 	 * to a VERY simple function defined on ROOT/index.EXT.
@@ -26,7 +38,7 @@ abstract class Library {
  	 */
 	public static function &config($key=false, $class=false){
 		$false = false;	
-		if (!$class = self::class_detect($class)) return $false;
+		if (!$class = self::class_called($class)) return $false;
 		$conf = Core::config_get($class);		
 		if (!is_string($key)) return $conf;
 		if (!isset($conf[$key])) return $false;
@@ -38,7 +50,7 @@ abstract class Library {
 	 * Child Detector
 	 * Who's calling the base? 
 	 */
-	private static function class_detect($class=false){
+	private static function class_called($class=false){
 		if ($class === null) return 'core';
 		return strtolower(get_called_class());
 	}

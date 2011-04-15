@@ -14,11 +14,12 @@ class Application {
 		$app = get_called_class();
 		$app = str_replace('Control','', str_replace('Model','',$app));
 		$model = $app.'Model';
-		# if there's no Model instance available pass.
-		if (isset($arg[0]) && is_object($arg[0]) && $arg[0] instanceof $model){
-			# pass the model as reference
+		# if there's a Model instance pass it to the controller as reference.
+		if (isset($arg[0]) && is_object($arg[0]) && $arg[0] instanceof $model)
 			$this->model = &$arg[0];
-		}
+		# define the current appname as a constant so it can be later accessed 
+		# by the Library class, or the user for that matter.
+		if (!defined('APPNAME')) define('APPNAME', $app);
 	}
 
 	/**

@@ -30,13 +30,6 @@ abstract class docs extends Library {
 			parent::error('Documentation View is missing.');
 	}
 
-	/**
-	 * Abstract Method Test
-	 * This is just a placeholder, so the class can test abstract methods.
-	 */
-	abstract public static function test();
-
-
 ######################################################################### PUBLIC
 
 	/**
@@ -311,7 +304,7 @@ abstract class docs extends Library {
 			# ignore lins with function or class declarations
 			if (preg_match(self::$regex_identifiers, $line)) continue;
 			$blk = array();
-			self::comment_calls_match($line,&$blk);
+			self::comment_calls_match($line,$blk);
 			if (empty($blk)) continue;
 			foreach ($blk as $blk) $found[] = $blk;
 		}
@@ -321,12 +314,12 @@ abstract class docs extends Library {
 	private static function comment_calls_match($line, &$block){
 		if (!preg_match(self::$regex_callers, $line, $match)) return false;
 		# if recursive matches found, make a recursive call.
-		if(!empty($match[1])) self::comment_calls_match($match[1], &$block);
+		if(!empty($match[1])) self::comment_calls_match($match[1], $block);
 		# determine calling function name
 		$line = preg_replace('/\s+/', ' ',$match[0]);
 		$line = trim(substr($line,0,strpos($line,'(')));
 		if (!$pos = strrpos($line,' ')) $pos = 0;
-		array_push(&$block, substr($line,$pos>1? $pos-1 : 0));
+		array_push($block, substr($line,$pos>1? $pos-1 : 0));
 	}
 
 
