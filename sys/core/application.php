@@ -1,36 +1,48 @@
 <?php
-
-class Model extends Application {}
-class Control extends Application {}
-
 class Application {
 
-	/**
-	 * Sets instantiates the model on the controller.
-	 */
-	public function __construct(){
-		$arg = func_get_args();
-		# determine the actual application name, and append Model to it.
-		$app = get_called_class();
-		$app = str_replace('Control','', str_replace('Model','',$app));
-		$model = $app.'Model';
-		# if there's a Model instance pass it to the controller as reference.
-		if (isset($arg[0]) && is_object($arg[0]) && $arg[0] instanceof $model)
-			$this->model = &$arg[0];
-		# define the current appname as a constant so it can be later accessed 
-		# by the Library class, or the user for that matter.
-		if (!defined('APPNAME')) define('APPNAME', $app);
-	}
+	public static $__vars = array();
 
 	/**
-	 * fallback to Library class
+	 * fallback to Library class or return null.
 	 */
 	public function __call($name, $args){
 		if (method_exists('Library', $name))
 			return call_user_func_array("Library::$name", $args);
-		return $name;
+		return null;
 	}
 
-	#public static function _construct(){}
+}
 
+class Model extends Application {}
+
+class Control extends Application {
+
+	/**
+	 * Run View on script shutdown
+	 * Make sure all variables declared using the view property are available 
+	 * as the main scope on the view file.
+	 */
+	public function __destruct(){
+	 	# If there's a view (it should)  create a pseudo scope and include file.
+	 	if (!file_exists(APP_PATH.APP_NAME.'.view'.EXT)) return false;
+
+	 	foreach (parent::$__vars as $__k => $__v) $$__k = $__v;
+	 	unset($__k,$__v);
+	 	include APP_PATH.APP_NAME.'.view'.EXT;
+	}
+
+}
+
+class View extends Application {
+
+	/**
+	 * Allow the user to store variables indistinctively.
+	 * They will be later put un view's scope.
+	 */
+	public function &__set($key, $val){
+		parent::$__vars[$key] = $val;
+		return parent::$__vars[$key];
+	}
+	
 }

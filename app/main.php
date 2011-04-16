@@ -15,7 +15,8 @@ class mainControl extends Control {
 
 		if ($app=='docs') return docs::control($args);
 
-		error('Mantenimiento en Proceso');
+		self::config('debug', false,'core');
+		notice('Mantenimiento en Proceso');
 	}
 
 }

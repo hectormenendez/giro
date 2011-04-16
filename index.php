@@ -27,7 +27,7 @@ define('IS_INC', count(get_included_files())>1? true : false);
 error_reporting(-1);
 set_error_handler('handler');
 register_shutdown_function('handler', 'shutdown');
-#error_reporting('E_PARSE');
+#error_reporting(0);
 
 ########################################################################## PATHS
 
@@ -66,7 +66,6 @@ if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
 include_once CORE.'library'.EXT;
 include_once CORE.'core'.EXT;
 Core::_construct();
-error('Classless');
 
 exit(0);
 
@@ -94,7 +93,9 @@ function handler($action = null, $msg = null){
 		exit(0);
 	}
 	# This is an error request then.
-	# But wait, we need to catch the "user".
+	# unles... are we trying to suppress errors with @
+	if (0 == error_reporting()) return true;
+	# But wait, we need to catch "user errors".
 	switch($action){
 		case 1: return true; # Parse Error, just bypass default handler.
 		break;

@@ -20,14 +20,16 @@ abstract class Core extends Library {
 
 	private static $config = array();
 	private static $library = array('core');
-	private static $route_index = false;
 	private static $application = array();
+	private static $route_index = null;
 
 	public static function _construct(){
 		self::$config = self::config_get();
-		self::$route_index = parent::config('route_index');
+		if (!self::$route_index = parent::config('route_index'))
+			error('Undefined Default Application');
 		spl_autoload_register('self::library');
-		self::route();
+		$uri = self::route_uri_parse();
+		self::app_load($uri);
 	}
 
 ######################################################################### PUBLIC
@@ -82,16 +84,20 @@ abstract class Core extends Library {
 	}
 
 	/**
-	 * Main Router
-	 * Determines the application to load by the framework based upon the URI,
-	 * or a special blend of rules send by the user.
+	 * 404 Router
+	 * Sends a 404 header to the browser.
 	 *
-	 * @return [void] or sends error.
+	 * @todo This is currently sending 500, since error modifies the heeader.
+	 * @todo Move this method to the library and update all the references to it.
 	 */
-	private static function route(){
-		if (!self::$route_index) error('Undefined Default Application');
-		$uri = self::route_uri_parse();
-		self::app_load($uri);
+	public static function route_404($ctrl=false, $iserr=false){
+		header('HTTP/1.0 404 Not Found');
+		if ($ctrl == self::$route_index)
+			error('Default Application Missing');
+		# if there's an error controller load it. [avoiding recursion]
+		if ($iserr === true || !$error = parent::config('route_error'))
+			error('File Not Found','404');
+		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
 	}
 
 	/**
@@ -163,47 +169,33 @@ abstract class Core extends Library {
 		# controller exists. is it loaded? no need to reload then.
 		if (in_array($ctrl, self::$application))
 			return self::$application[$ctrl];
-			
-		# define a constant holding app's path.
+		# define constants holding app's path and name
 		$path_ctrl_dir = pathinfo($path_ctrl, PATHINFO_DIRNAME).SLASH;
-		define('APP_'.strtoupper($ctrl), $path_ctrl_dir);
+		define('APP_PATH', $path_ctrl_dir);
+		define('APP_NAME', $ctrl);
 		# If a model exist, load it first.
 		$model = false;
 		$found = file_exists($path_model=APP.$ctrl.'.model'.EXT) ||
 				 file_exists($path_model=APP.$ctrl.SLASH.'model'.EXT);
 		if ($found)
-			$model = self::app_include($ctrl.'Model', $path_model, $args);
+			$model = self::app_inc($ctrl.'Model', $path_model, $args);
 		# instantiate controller and push the model as [last] argument
-		return self::app_include($ctrl.'Control', $path_ctrl, $args, $model);
+		return self::app_inc($ctrl.'Control', $path_ctrl, $args, $model);
 	}
 
-	private static function &app_include($name, $path, $args=array(), $model=null){
+	private static function &app_inc($name, $path, $args=array(), &$model=null){
 		include $path;
 		if (!class_exists($name,false)) error("Erroneus Declaration in $name");
 		# if this is a controller and there's a model available, instantiate it.
-		$instance = new $name($model);
-		$method = str_replace('Model','',str_replace('Control','',$name));
+		$instance = new $name;
+		$instance->view = new View;
+		$modelname = APP_NAME.'Model';
+		if (is_object($model) && $model instanceof $modelname)
+			$instance->model = &$model;
 		# find a user-sent constructor ans instantiate it.
-		if (method_exists($instance, $method))
-			call_user_func_array(array($instance, $method), $args);
+		if (method_exists($instance, APP_NAME))
+			call_user_func_array(array($instance, APP_NAME), $args);
 		return $instance;
-	}
-
-	/**
-	 * 404 Router
-	 * Sends a 404 header to the browser.
-	 *
-	 * @todo This is currently sending 500, since error modifies the heeader.
-	 * @todo Move this method to the library and update all the references to it.
-	 */
-	public static function route_404($ctrl=false, $iserr=false){
-		header('HTTP/1.0 404 Not Found');
-		if ($ctrl == self::$route_index)
-			error('Default Application Missing');
-		# if there's an error controller load it. [avoiding recursion]
-		if ($iserr === true || !$error = parent::config('route_error'))
-			error('File Not Found','404');
-		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
 	}
 	
 	/**

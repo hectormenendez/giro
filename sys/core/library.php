@@ -7,18 +7,6 @@
 abstract class Library {
 
 	/**
-	 * What's app?
-	 * Returns the currently running application name.
-	 *
-	 * @todo is this really necessary? I mean, using this is just a way of c
-	 *		 checking if the constat is defined. Anyways, ponder it later.
-	 */
-	public static function application(){
-		if (!defined('APPNAME')) error('An application has not run yet');
-		return APPNAME;
-	}
-
-	/**
 	 * Config Key Getter / Setter
 	 * Specify the key [and optinally a value], and you're good to go.
 	 * It automatically detects the lib you're in; Although you can specify one.
