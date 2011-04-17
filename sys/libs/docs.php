@@ -49,11 +49,11 @@ abstract class docs extends Library {
 	 *	All
 	 *	Traverses all files in framework and retrieves all documentation.
 	 */
-	public static function file_all($extra=false){
+	public static function parse_all($extra=false){
 		$files = self::dir_read(substr(ROOT,0,-1));
 		$array = array();
 		foreach($files as $file){
-			$file = self::file($file);
+			$file = self::parse($file);
 			if (empty($file)) continue;
 			# merge with resulting array.
 			foreach($file as $k=>$v) $array[$k] = $v;
@@ -108,7 +108,7 @@ abstract class docs extends Library {
 	private static function _control_db_get(){
 		# get all documentation on the fly, serialize it, and cache it.
 		if (!file_exists(self::$control_cache)){
-			$db = self::file_all();
+			$db = self::parse_all();
 			file_put_contents(self::$control_cache, serialize($db));
 		}
 		# file exists, get from cache.
@@ -133,12 +133,12 @@ abstract class docs extends Library {
 	 * @param	path[string]	Target file's full path.
 	 * @return 
 	 */
-	public static function file($path=false){
+	public static function parse($path=false){
 		if (!@file_exists($path)) error('Invalid Path.');
 		$classes = array();
 		$methods = array();
 		$cont = file_get_contents($path);
-		$line = file($path, FILE_SKIP_EMPTY_LINES);
+		$line = file($path, true, FILE_SKIP_EMPTY_LINES);
 		# tokenize string, so it's easier to identify its elements.
 		$token = token_get_all($cont);
 		foreach($token as $tk){

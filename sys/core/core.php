@@ -246,7 +246,7 @@ abstract class Core extends Library {
 		#print_r($trace); die;
 		foreach($trace as $t){
 			if (!isset($t['file']) || !isset($t['line'])) continue;
-			$line = file($t['file']);
+			$line = parent::file($t['file']);
 			$lnum = $t['line']-1;
 			$line = trim($line[$lnum]);
 			if (!preg_match('/\w+/', $line)) continue;
