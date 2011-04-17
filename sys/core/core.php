@@ -223,6 +223,9 @@ abstract class Core extends Library {
 			case E_STRICT:
 				$txt = "Notice";
 				break;
+			default: # unknown error type? get error constant name.
+				$tmp = get_defined_constants(true);
+				$txt = array_search($type, $tmp['Core'], true);
 		}
 		$prop = array_shift($trace);
 		$class = isset($prop['class']) && $debug? $prop['class'] : '';
