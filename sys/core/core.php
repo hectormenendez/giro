@@ -28,8 +28,9 @@ abstract class Core extends Library {
 		if (!self::$route_index = parent::config('route_index'))
 			error('Undefined Default Application');
 		spl_autoload_register('self::library');
-		$uri = self::route_uri_parse();
-		self::app_load($uri);
+		self::uri_parse();
+		if (strpos(URI, URL_PUB)!==false) self::file_load();
+		else self::app_load();
 	}
 
 ######################################################################### PUBLIC
@@ -84,64 +85,64 @@ abstract class Core extends Library {
 	}
 
 	/**
-	 * 404 Router
-	 * Sends a 404 header to the browser.
-	 *
-	 * @todo This is currently sending 500, since error modifies the heeader.
-	 * @todo Move this method to the library and update all the references to it.
-	 */
-	public static function route_404($ctrl=false, $iserr=false){
-		header('HTTP/1.0 404 Not Found');
-		if ($ctrl == self::$route_index)
-			error('Default Application Missing');
-		# if there's an error controller load it. [avoiding recursion]
-		if ($iserr === true || !$error = parent::config('route_error'))
-			error('File Not Found','404');
-		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
-	}
-
-	/**
 	 * URI Parser
 	 * Extracts information from the URI and explodes it to pieces so it can be
 	 * better understood by the framework.
 	 */
-	private static function route_uri_parse($key='REQUEST_URI'){
+	private static function uri_parse($key='REQUEST_URI'){
 		if (!isset($_SERVER[$key]) || $_SERVER[$key]=='')
 			error('The URI is unavailable [crap].');
-		# get rid of the path and file name [if any]
-		$uri = str_replace(PATH,'/',str_replace(BASE,'',$_SERVER[$key]));
-		# sanitize a little bit, by removing double slashes
-		while (strpos($uri,'//')!==false) $uri = str_replace('//','/',$uri);
-		# determine the application to run
-		return self::route_uri_identify($uri);
+		# catch calls to pub dir, and parse them differently.
+		define('URI', str_replace(BASE,'',$_SERVER[$key]));
 	}
 
-	private static function route_uri_identify($uri){
-		# uri starts with '?' then treat it as a GET request
-		if (isset($uri[0]) && $uri[0] == '?'){
-			$uri = self::route_uri_filter(substr($uri,1),'\&\=');
-			foreach(explode('&',$uri) as $v){
-				$v = explode('=',$v);
-				if (!isset($v[1])) $v[1] = null;
-				$var[$v[0]] = $v[1];
+	private static function file_type($path){
+		$type = self::config('mime-types');
+		# extract extension.
+		$ext = pathinfo($path, PATHINFO_EXTENSION);
+		if (empty($ext) || !in_array($ext, array_keys($type)))
+			return 'text/plain';
+		return $type[$ext];
+	}
+
+	/**
+	 * File Identifier
+	 * Catches request to pub folder, check if the user is tryng to load a 
+	 * dynamic file from the framework.
+	 *
+	 * @todo Use framework methods for header management ie: Core::notfound()
+	 */
+	private static function file_load(){
+		$file = str_replace(URL_PUB, PUB, URI);
+		if (file_exists($file)){
+			$mime = self::file_type($file);
+			if ($mime == 'text/plain'){
+				header("HTTP/1.0 403 Forbidden");
+				warning('For security reasons, you are not allowed to see this file.');
 			}
-			$uri = array('ctrl'=>'__index__','args'=>$var);
+			header('HTTP/1.1 200 OK');
+			header("Content-Type: $mime");
+			include ($file);
+			exit(0);
+		} 
+		$uri = str_replace(URL_PUB, '', URI);
+		$app = '';
+		if(($pos = strpos($uri, SLASH)) !== false){
+			$app = substr($uri, 0, $pos);
+			$uri = substr($uri, $pos+1);
+		} else $uri = pathinfo($uri, PATHINFO_BASENAME);
+		if (!empty($app)) $uri = ".$uri";
+		$file = APP.$app.$uri;
+		$mime = self::file_type($file);
+		$file = $file.EXT;
+		if (!file_exists($file) || $mime == 'text/plain'){
+			header('HTTP/1.0 404 Not Found');
+			error('File not found');
 		}
-		# uri contains slashes
-		elseif ($uri!='/' && strpos($uri,'/')!==false){
-			$uri = self::route_uri_filter($uri,"\/");
-			$uri = explode("/", $uri);
-			array_shift($uri);
-			$uri = array('ctrl'=>array_shift($uri), 'args'=>$uri);
-		}
-		# uri is empty
-		else $uri = array('ctrl'=>'__index__', 'args'=>array());
-		return $uri;
-	}
-
-	private static function route_uri_filter($uri,$xtra=''){
-		$char = parent::config('uri_chars');
-		return preg_replace('/[^'.$xtra.$char.']/','',$uri);
+		header('HTTP/1.1 200 OK');
+		header("Content-Type: $mime");
+		include ($file);
+		exit(0);
 	}
 
 	/**
@@ -156,7 +157,8 @@ abstract class Core extends Library {
 	 *
 	 * @return [mixed][reference] Application controlller.
 	 */
-	private static function &app_load($uri, $iserr=false){
+	private static function &app_load($iserr=false){
+		$uri = self::app_id();
 		# Trigger autoload for Application
 		if (!class_exists('application')) error('Application Library Missing');
 		foreach ($uri as $k=>$v) $$k = $v; # $ctrl, $args
@@ -196,6 +198,42 @@ abstract class Core extends Library {
 		if (method_exists($instance, APP_NAME))
 			call_user_func_array(array($instance, APP_NAME), $args);
 		return $instance;
+	}
+
+	/**
+	 * Application Identifier
+	 * Uses de uri to identify the correct app and run it.
+	 */
+	private static function app_id(){
+		# remove subdirectories (if any)
+		$uri = str_replace(PATH,'/',URI);
+		# sanitize a little bit, by removing double slashes
+		while (strpos($uri,'//')!==false) $uri = str_replace('//','/',$uri);
+		# uri starts with '?' then treat it as a GET request
+		if (isset($uri[0]) && $uri[0] == '?'){
+			$uri = self::uri_filter(substr($uri,1),'\&\=');
+			foreach(explode('&',$uri) as $v){
+				$v = explode('=',$v);
+				if (!isset($v[1])) $v[1] = null;
+				$var[$v[0]] = $v[1];
+			}
+			$uri = array('ctrl'=>'__index__','args'=>$var);
+		}
+		# uri contains slashes
+		elseif ($uri!='/' && strpos($uri,'/')!==false){
+			$uri = self::uri_filter($uri,"\/");
+			$uri = explode("/", $uri);
+			array_shift($uri);
+			$uri = array('ctrl'=>array_shift($uri), 'args'=>$uri);
+		}
+		# uri is empty
+		else $uri = array('ctrl'=>'__index__', 'args'=>array());
+		return $uri;
+	}
+
+	private static function uri_filter($uri,$xtra=''){
+		$char = parent::config('uri_chars');
+		return preg_replace('/[^'.$xtra.$char.']/','',$uri);
 	}
 	
 	/**
@@ -261,4 +299,22 @@ abstract class Core extends Library {
 		if (stripos($type, 'notice') === false ) exit(2);
 		return true;
 	}
+
+	/**
+	 * 404 Router
+	 * Sends a 404 header to the browser.
+	 *
+	 * @todo This is currently sending 500, since error modifies the heeader.
+	 * @todo Move this method to the library and update all the references to it.
+	 */
+	public static function route_404($ctrl=false, $iserr=false){
+		header('HTTP/1.0 404 Not Found');
+		if ($ctrl == self::$route_index)
+			error('Default Application Missing');
+		# if there's an error controller load it. [avoiding recursion]
+		if ($iserr === true || !$error = parent::config('route_error'))
+			error('File Not Found','404');
+		self::app_load(array('ctrl'=>$error, array($ctrl)), true);
+	}
+
 }

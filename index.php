@@ -53,7 +53,10 @@ foreach ($_E as $k=>$v){
 define('EXT', BASE == ($ext = substr(BASE, strpos(BASE,'.')))? '' : $ext);
 # Framework's relative path and url. Avoid these when in CLI.
 define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
+
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);
+define('URL_PUB', substr(PUB,strpos(ROOT, PATH)));
+
 unset($k,$v,$ext,$_E);
 
 # if this file was included by another script, stop to avoid infinite loops.
