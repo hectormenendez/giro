@@ -25,9 +25,8 @@ define('IS_INC', count(get_included_files())>1? true : false);
 
 #ini_set('display_errors', false); # Added obscurity, harder developing.
 error_reporting(-1);
-set_error_handler('handler');
-register_shutdown_function('handler', 'shutdown');
-#error_reporting(0);
+set_error_handler('_error');
+register_shutdown_function('_error', 'shutdown');
 
 ########################################################################## PATHS
 
@@ -81,12 +80,12 @@ exit(0);
  *
  * @note	Please don't use trigger errror, expect th unexpected.
  */
-function handler($action = null, $msg = null){
+function _error($action = null, $msg = null){
 	# if this is a shutdown request, detect if there is pending errors to send
 	# and if not, proceed to run the real shutdown process. or fail silently. xD
 	if ($action === 'shutdown'){
 		if (is_null($e = error_get_last()) === false && $e['type'] == 1)
-			call_user_func_array('handler', $e);
+			call_user_func_array('_error', $e);
 		if (class_exists('Core',false) && method_exists('Core', 'shutdown'))
 			call_user_func('Core::shutdown');
 		#echo "called";
@@ -133,12 +132,6 @@ function handler($action = null, $msg = null){
 	}
 }
 
-function error ($msg = ''){
-	return call_user_func('handler', E_USER_ERROR, $msg);
-}
-function warning ($msg = ''){
-	return call_user_func('handler', E_USER_WARNING, $msg);
-}
-function notice($msg = ''){
-	return call_user_func('handler', E_USER_NOTICE, $msg);
-}
+function error   ($m=''){ return call_user_func('_error', E_USER_ERROR,   $m);}
+function warning ($m=''){ return call_user_func('_error', E_USER_WARNING, $m);}
+function notice  ($m=''){ return call_user_func('_error', E_USER_NOTICE,  $m);}
