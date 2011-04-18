@@ -69,7 +69,6 @@ class Application extends Library {
 	 		for($i=$method->getStartLine()-1; $i < $method->getEndLine(); $i++){
 	 			$line = preg_replace('%\s*(?:#|//).*%','', $file[$i]);
 	 			$line = preg_replace('/\s+/',' ',trim($line));
-	 			var_dump($line);
 	 			if (!empty($line)) $src[] = $line;
 	 		}
 	 		# remove visibility declarations
