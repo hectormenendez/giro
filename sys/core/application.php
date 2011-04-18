@@ -1,7 +1,13 @@
 <?php
-class Application {
+/**
+ * Application Common
+ * Th construction of this classes is done manually in Core::app_load.
+ */
+class Application extends Library {
 
 	public static $__vars = array();
+	public static $__queue = array();
+	private static $__destroyed = false;
 
 	/**
 	 * fallback to Library class or return null.
@@ -12,37 +18,64 @@ class Application {
 		return null;
 	}
 
-}
+	/**
+	 * Destructor
+	 * This will be run when the script finishes.
+	 */
+	 public static function _destruct(){
+	 	# since this method will be inherited, make sure only run once.
+	 	if (self::$__destroyed) return false;
+	 	self::$__destroyed = true;
+	 	foreach(self::$__queue as $queue){
+	 		if (!is_array($queue) || empty($queue)) continue;
+	 		echo $name = (string)array_shift($queue);
+	 		if (!is_callable($name)) {
+		 		notice("'$name' is not callable.");
+		 		continue;
+		 	}
+	 		call_user_func_array($name,$queue);
+	 	}
+	 }
 
-class Model extends Application {}
 
-class Control extends Application {
+	 /**
+	  * Run method after view.
+	  */
+	 public static function queue($queue = null){
+	 	if (!is_array(self::$__queue)) self::$__queue = array();
+	 	if (is_string($queue)) $queue = array($queue);
+	 	elseif (empty($queue) || !is_array($queue)) return false;
+	 	array_push(self::$__queue, $queue);
+	 	return true;
+	 }
 
 	/**
-	 * Run View on script shutdown
-	 * Make sure all variables declared using the view property are available 
-	 * as the main scope on the view file.
+	 * Method Getter
+	 * Retrieve method declarations on given class.
 	 */
-	public function __destruct(){
-	 	# If there's a view (it should)  create a pseudo scope and include file.
-	 	if (!file_exists(APP_PATH.APP_NAME.'.view'.EXT)) return false;
+	protected static function methods_get($class){
+	 	$view = new ReflectionClass($class);
+	 	$file = parent::file($view->getFileName());
+	 	$methods = array();
+	 	# get only methods that are not defined here.
+	 	$m = array_diff(get_class_methods($class),get_class_methods(__CLASS__));
+	 	foreach ($m as $methodname){
+	 		$method = $view->getMethod($methodname);
+	 		if ($method->isPrivate() || $method->isProtected()) continue;
+	 		# ignore methods starting with underscore
+	 		if ($methodname[0] == '_') continue;
+	 		# obtain method's source [and cleanit a little]
+	 		$src = array();
+	 		for($i=$method->getStartLine()-1; $i < $method->getEndLine(); $i++){
+	 			$line = preg_replace('/\s+/',' ',trim($file[$i]));
+	 			if (!empty($line)) $src[] = $line;
+	 		}
+	 		# remove visibility declarations
+	 		$rx = '/(\s*(?:final|abstract|static|public|private|protected)\s)/i';
+	 		$src[0] = preg_replace($rx,'', substr($src[0], 0, strpos($src[0], '{')+1));
+	 		$methods[$methodname] = implode(' ', $src);
+	 	}
+	 	return $methods;
+	 }
 
-	 	foreach (parent::$__vars as $__k => $__v) $$__k = $__v;
-	 	unset($__k,$__v);
-	 	include APP_PATH.APP_NAME.'.view'.EXT;
-	}
-
-}
-
-class View extends Application {
-
-	/**
-	 * Allow the user to store variables indistinctively.
-	 * They will be later put un view's scope.
-	 */
-	public function &__set($key, $val){
-		parent::$__vars[$key] = $val;
-		return parent::$__vars[$key];
-	}
-	
 }

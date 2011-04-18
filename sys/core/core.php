@@ -40,8 +40,9 @@ abstract class Core extends Library {
 	 * them before the framework shuts down.
 	 */
 	public static function shutdown(){
-		foreach (array_reverse(self::$library) as $l)
+		foreach (array_reverse(self::$library) as $l){
 			if (method_exists($l,'_destruct')) call_user_func("$l::_destruct");
+		}
 	}
 
 	/**
@@ -52,19 +53,18 @@ abstract class Core extends Library {
 	 *
 	 * @return [array] Loaded Library array or sends error.
 	 */
-	public static function &library($name=false){
-		$si = true;
-		$no = false;
+	public static function library($name=false){
 		$name = strtolower($name);
 		if (!is_string($name)) return self::$library;
-		if (in_array($name, self::$library)) return $si;
+		if (in_array($name, self::$library)) return true;
 		$found = file_exists($path=CORE.$name.EXT) ||
 				 file_exists($path=LIBS.$name.EXT);
 		if (!$found) error("Library <u>$name</u> does not exist");
 		include $path;
 		if (method_exists($name,'_construct'))
 			call_user_func("$name::_construct");
-		return $si;
+		array_push(self::$library, $name);
+		return true;
 	}
 
 	/**
