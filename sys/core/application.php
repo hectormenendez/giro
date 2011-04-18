@@ -28,7 +28,7 @@ class Application extends Library {
 	 	self::$__destroyed = true;
 	 	foreach(self::$__queue as $queue){
 	 		if (!is_array($queue) || empty($queue)) continue;
-	 		echo $name = (string)array_shift($queue);
+	 		$name = (string)array_shift($queue);
 	 		if (!is_callable($name)) {
 		 		notice("'$name' is not callable.");
 		 		continue;
@@ -67,7 +67,9 @@ class Application extends Library {
 	 		# obtain method's source [and cleanit a little]
 	 		$src = array();
 	 		for($i=$method->getStartLine()-1; $i < $method->getEndLine(); $i++){
-	 			$line = preg_replace('/\s+/',' ',trim($file[$i]));
+	 			$line = preg_replace('%^\s*(?:#|//).*%','', $file[$i]);
+	 			$line = preg_replace('/\s+/',' ',trim($line));
+	 			var_dump($line);
 	 			if (!empty($line)) $src[] = $line;
 	 		}
 	 		# remove visibility declarations
