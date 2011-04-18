@@ -67,7 +67,7 @@ class Application extends Library {
 	 		# obtain method's source [and cleanit a little]
 	 		$src = array();
 	 		for($i=$method->getStartLine()-1; $i < $method->getEndLine(); $i++){
-	 			$line = preg_replace('%\s*(?:#|//).*%','', $file[$i]);
+	 			$line = preg_replace('%[^\S]+(?:#|//).*%','', $file[$i]);
 	 			$line = preg_replace('/\s+/',' ',trim($line));
 	 			if (!empty($line)) $src[] = $line;
 	 		}
