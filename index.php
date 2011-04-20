@@ -57,12 +57,29 @@ define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);
 define('URL_PUB', substr(PUB,strpos(ROOT, PATH)));
 
-unset($k,$v,$ext,$_E);
+########################################################################### UUID
 
-# if this file was included by another script, stop to avoid infinite loops.
-if (IS_INC) return;
+# Obtain the IP trying to overpass, proxies.
+if (!empty($_SERVER['HTTP_CLIENT_IP']))
+	$x = $_SERVER['HTTP_CLIENT_IP'];
+elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+	$x = $_SERVER['HTTP_X_FORWARDED_FOR'];
+else
+	$x = $_SERVER['REMOTE_ADDR'];
+# Append the user agent and a salt
+$x .=  $_SERVER['HTTP_USER_AGENT'].'GiRo23';
+# Append all HTTP_ACCEPT keys.
+foreach (array('','_ENCODING','_LANGUAGE','_CHARSET') as $i)
+	$x .= $_SERVER['HTTP_ACCEPT'.$i];
+
+define('UUID',md5(str_replace(' ','',$x)));
+
+
+unset($x, $k,$v,$ext,$_E);
 
 ################################################################ FRAMEWORK START
+# if this file was included by another script, stop to avoid infinite loops.
+if (IS_INC) return;
 
 if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
 include_once CORE.'library'.EXT;
