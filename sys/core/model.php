@@ -1,4 +1,4 @@
 <?php
-class Model extends Application {
+class Model extends ApplicationCommon {
 	
 }

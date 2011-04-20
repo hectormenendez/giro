@@ -7,6 +7,20 @@
 abstract class Library {
 
 	/**
+	 * Static calls Catcher
+	 * Write some repetetive methods by catching it's name and redirect.
+	 */
+	 public static function __callStatic($name, $args) {
+	 	# error plus header redirector.
+	 	if (preg_match('/^(error|warning|notice)_(\d{3})$/i', $name, $match)){
+	 		self::header((int)$match[2]);
+	 		call_user_func_array($match[1],$args);
+	 		return true;
+	 	}
+	 	error("Unknown Method '$name'.");
+	 }
+
+	/**
 	 * Config Key Getter / Setter
 	 * Specify the key [and optinally a value], and you're good to go.
 	 * It automatically detects the lib you're in; Although you can specify one.
@@ -57,6 +71,52 @@ abstract class Library {
 			file($path, $flags) : 
 			file_get_contents($path);
 		return self::$file[$path][$mode];
+	}
+
+
+	public static function header($code = null){
+		if (headers_sent()) return false;
+		if (is_int($code)){
+			switch((int)$code):
+			case 200: $head = 'HTTP/1.1 200 OK';							break;
+			case 304: $head = 'HTTP/1.0 304 Not Modified';					break;
+			case 400: $head = 'HTTP/1.0 400 Bad request'; 					break;
+			case 401: $head = 'HTTP/1.0 401 Authorization required';		break;
+			case 402: $head = 'HTTP/1.0 402 Payment required'; 				break;
+			case 403: $head = 'HTTP/1.0 403 Forbidden'; 					break;
+			case 404: $head = 'HTTP/1.0 404 Not found';						break;
+			case 405: $head = 'HTTP/1.0 405 Method not allowed';			break;
+			case 406: $head = 'HTTP/1.0 406 Not acceptable';				break;
+			case 407: $head = 'HTTP/1.0 407 Proxy authentication required'; break;
+			case 408: $head = 'HTTP/1.0 408 Request timeout';				break;
+			case 409: $head = 'HTTP/1.0 409 Conflict';						break;
+			case 410: $head = 'HTTP/1.0 410 Gone';							break;
+			case 411: $head = 'HTTP/1.0 411 Length required';				break;
+			case 412: $head = 'HTTP/1.0 412 Precondition failed';			break;
+			case 413: $head = 'HTTP/1.0 413 Request entity too large';		break;
+			case 414: $head = 'HTTP/1.0 414 Request URI too large';			break;
+			case 415: $head = 'HTTP/1.0 415 Unsupported media type';		break;
+			case 416: $head = 'HTTP/1.0 416 Request range not satisfiable'; break;
+			case 417: $head = 'HTTP/1.0 417 Expectation failed';			break;
+			case 422: $head = 'HTTP/1.0 422 Unprocessable entity';			break;
+			case 423: $head = 'HTTP/1.0 423 Locked';						break;
+			case 424: $head = 'HTTP/1.0 424 Failed dependency';				break;
+			case 500: $head = 'HTTP/1.0 500 Internal server error';			break;
+			case 501: $head = 'HTTP/1.0 501 Not Implemented';				break;
+			case 502: $head = 'HTTP/1.0 502 Bad gateway';					break;
+			case 503: $head = 'HTTP/1.0 503 Service unavailable';			break;
+			case 504: $head = 'HTTP/1.0 504 Gateway timeout';				break;
+			case 505: $head = 'HTTP/1.0 505 HTTP version not supported';	break;
+			case 506: $head = 'HTTP/1.0 506 Variant also negotiates';		break;
+			case 507: $head = 'HTTP/1.0 507 Insufficient storage';			break;
+			case 510: $head = 'HTTP/1.0 510 Not extended';					break;
+			default: return false;
+			endswitch;
+		}
+		elseif(is_string($code)) return false; # add more header shortcuts here
+		else return false;
+		header($head);
+		return true;
 	}
 
 	/**

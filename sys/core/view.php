@@ -1,8 +1,8 @@
 <?php
 /**
- * View Manager.
- * This methods will be available as normal functions inside the view file
- * private, protected, and methods starting with an underscore will be ignored.
+ * View
+ * public non-underscored methods will be available as normal functions inside 
+ * the view file.
  *
  * @note Remember that these function will run in the global scope, 
  * 		 so dont treat them as class members, technically speaking, they won't 
@@ -11,54 +11,54 @@
  * @note DO NOT USE MULTI-LINE COMMENTS INSIDE FUNCTIONS. sanitization hasn't
  		 been implemented yet.
  */
-class View extends Application {
+class View extends ApplicationCommon {
 
-	public static $tags = array();
-
+	public static $__vars = array();
+	public static $__tags = array();
 
 	/**
 	 * Allow the user to store variables indistinctively.
 	 * They will be later put un view's scope.
 	 */
 	public function &__set($key, $val){
-		parent::$__vars[$key] = $val;
-		return parent::$__vars[$key];
+		self::$__vars[$key] = $val;
+		return self::$__vars[$key];
 	}
 
 	/**
 	 * Method redirector
-	 * Just works for taggin functions.
+	 * Just works for taggin functions, falls back to parent's.
 	 */
 	public function __call($name, $args){
-		# only acceot tag adds
+		# only acceot tag adds, fall back to parent's call magin method.
 		if (!is_string($name) || stripos(substr($name, 0, 4), 'tag_') === false)
-			return null;
+			return parent::__call($name, $args);
+
 		array_unshift($args, substr($name, 4));
 		call_user_func_array('self::__tag_add', $args);
 	}
 
-
 	/**
-	 * HTML5 Template
-	 * Adds the basic tags needed for a html5 experience.
+	 * HTML Template
+	 * Adds the basic tags needed for a html experience.
 	 *
 	 * @todo Add the HTML folder as a constant. [templates]
 	 * @todo Language and Charset, set by the framework.
 	 */
-	public static function html5($title = ''){
-		static $html5 = false;
+	public static function html($title = ''){
+		static $html = false;
 	
-		$jspos = Library::config('js_position', null, 'view');
+		$jspos = Library::config('js_position', null, 'application');
 		if (!$jspos) $jspos = 'ini';
 
-		if (is_string($html5)) return;
-		$html5 = Library::file(SYS.'html/html5.html', false);
+		if (is_string($html)) return;
+		$html = Library::file(SYS.'html/html5.html', false);
 		View::__tag_add("js$jspos", '//code.jquery.com/jquery.min.js');
 		# if existan, add JS and CSS
 		if (file_exists(APP_PATH.APP_NAME.'.css'.EXT))
-			View::__tag_add('link', 'stylesheet', URL_PUB.APP_NAME.'.css');
+			View::__tag_add('link', 'stylesheet', PUB_URL.APP_NAME.'.css');
 		if (file_exists(APP_PATH.APP_NAME.'.js'.EXT))
-			View::__tag_add("js$jspos", URL_PUB.APP_NAME.'.js');		
+			View::__tag_add("js$jspos", PUB_URL.APP_NAME.'.js');		
 		# this vars should be set by the framework, but until then, they'll be fixed
 		$vars = array(
 			'lang' => 'es-mx',
@@ -66,21 +66,27 @@ class View extends Application {
 			'title' => $title,
 			'favicon' => PATH.'pub/favicon.ico'
 		);
-		foreach ($vars as $k => $v) $html5 = str_replace("%$k%", $v, $html5);
+		foreach ($vars as $k => $v) $html = str_replace("%$k%", $v, $html);
 		# write tags and split the file.
-		$html5 = explode('<%content%>', View::__tag_write($html5));
+		$html = explode('<%content%>', View::__tag_write($html));
 		# write the latter piece after parsing the view;
-		View::queue(array('View::_html5', $html5[1]));
-		return $html5[0];
+		Application::queue('View::_html', $html[1]);
+		return $html[0];
 	}
-	public static function _html5($html){ echo $html; }
+
+	/**
+	 * Closes html template.
+	 */
+	public static function _html($html){
+		echo $html;
+	}
 
 	/**
 	 * Add HTML tags
 	 * Reeplace <%code%> with a tag template specified here.
 	 */
 	public static function __tag_add($name, $key = '', $cont = ''){
-		if (!isset(self::$tags[$name])) self::$tags[$name] = array();
+		if (!isset(self::$__tags[$name])) self::$__tags[$name] = array();
 		switch ($name) {
 		  case 'meta':
 		    $tag = "<meta name='".((string)$key)."' content='".((string)$cont)."'>\n";
@@ -92,9 +98,10 @@ class View extends Application {
 		  case 'link':
 		  	$tag = "<link rel='".((string)$key)."' href='".((string)$cont)."'>\n";
 		  	break;
-		  	
+		  default:
+		  	warning("Invalid Tag '$name'");
 		}
-		self::$tags[$name][] = $tag;
+		self::$__tags[$name][] = $tag;
 
 	}
 
@@ -108,9 +115,9 @@ class View extends Application {
 			return $content;
 		foreach($match[1] as $i=>$key){
 			$rep = '';
-			if (isset(self::$tags[$key])){
+			if (isset(self::$__tags[$key])){
 				$first = true;
-				foreach(self::$tags[$key] as $tag){
+				foreach(self::$__tags[$key] as $tag){
 					# add a tab so after the first write.
 					$rep .= $first || $key=='jsend'? $tag : "\t".$tag;
 					$first = false;
@@ -122,4 +129,5 @@ class View extends Application {
 		$content = preg_replace('/\s+$/m', '', $content);
 		return $content;
 	}
+
 }
