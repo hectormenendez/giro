@@ -55,7 +55,8 @@ define('EXT', BASE == ($ext = substr(BASE, strpos(BASE,'.')))? '' : $ext);
 define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
 
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);
-define('URL_PUB', substr(PUB,strpos(ROOT, PATH)));
+
+define('PUB_URL', substr(PUB,strpos(ROOT, PATH)));
 
 ########################################################################### UUID
 
@@ -66,13 +67,13 @@ elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
 	$x = $_SERVER['HTTP_X_FORWARDED_FOR'];
 else
 	$x = $_SERVER['REMOTE_ADDR'];
-# Append the user agent and a salt
-$x .=  $_SERVER['HTTP_USER_AGENT'].'GiRo23';
-# Append all HTTP_ACCEPT keys.
-foreach (array('','_ENCODING','_LANGUAGE','_CHARSET') as $i)
-	$x .= $_SERVER['HTTP_ACCEPT'.$i];
+define('IP',$x);
 
-define('UUID',md5(str_replace(' ','',$x)));
+# Append the user agent and a salt
+define('UUID',md5(IP.$_SERVER['HTTP_USER_AGENT'].'GiRo23'));
+# Append all HTTP_ACCEPT keys.
+#foreach (array('','_ENCODING') as $i)
+#	$x .= $_SERVER['HTTP_ACCEPT'.$i];
 
 
 unset($x, $k,$v,$ext,$_E);
@@ -121,8 +122,12 @@ function _error($action = null, $msg = null){
 		case E_USER_ERROR:
 		case E_USER_WARNING:
 		case E_USER_NOTICE:
+			$bt = debug_backtrace(true);
+			$bt = array_slice($bt, 2);
 			# Go back two steps ahead and capture file & line.
 			$bt = array_slice(debug_backtrace(true), 2);
+			while(!empty($bt) && !isset($bt[0]['line'])) array_shift($bt);
+			if (empty($bt)) die('You need to debug this right now!');
 			$arg = array_shift($bt);
 			$arg = array($action, $msg, $arg['file'], $arg['line']);
 		break;
