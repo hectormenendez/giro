@@ -74,6 +74,52 @@ abstract class Library {
 	}
 
 
+	/**
+	 * Encryptor / Decryptor
+	 * Replaces string according to key, and obfuscates a little bit by reversing
+	 * al characters hex version. It's not bullet proof, but it will hold ok.
+	 *
+	 * @param [string]$action 	encrypt/decrypt, nothing more, nothing less.
+	 * @param [string]$str		The string to encrypt
+	 * @param [string]$key 		the secret key.
+	 */
+	public static function cryptor($action=false, $str=false, $key=false){
+		if (($action != 'encrypt' && $action != 'decrypt') ||
+			!is_string($str) || !is_string($key) || empty($str) || empty($key))
+			error('All arguments are required and type string in Cryptor.');
+		$encrypt = function ($str, $key){
+			$str = le_crypt(strrev($str), $key);
+			$lst = strlen($str);
+			$res = '';
+			for ($i=0; $i < $lst; $i++){
+				if (strlen($tmp = dechex(ord($str[$i]))) == 1) $tmp = '0'.$tmp;
+				$res .= strrev($tmp);
+			}
+			return $res;
+		};
+		$decrypt = function ($str, $key){
+			$lst = strlen($str);
+			$res = '';
+			for ($i=0; $i < $lst; $i+=2) $res .= chr(hexdec(strrev(substr($str,$i, 2))));
+			return strrev(le_crypt($res,$key));
+		};
+		if (!function_exists('le_crypt')):
+		# the magic happens here.
+		function le_crypt($str, $key){
+			$res = '';
+			$len_key = strlen($key);
+			$len_str = strlen($str);
+			$i = 0;
+			for(; $i < $len_str; $i++)
+				$res.= chr((ord($str[$i])^ord($key[$i % $len_key])) & 0xFF); #here
+			return $res;		
+		}
+		endif;
+		# redirect
+		return $$action($str, $key);
+	}
+
+
 	public static function header($code = null){
 		if (headers_sent()) return false;
 		if (is_int($code)){
