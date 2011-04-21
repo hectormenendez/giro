@@ -101,30 +101,23 @@ abstract class Core extends Library {
 	 * Catches request to pub folder, check if the user is tryng to load a 
 	 * dynamic file from the framework.
 	 *
-	 * @todo cache management for dinamic includes.
+	 * @todo cache management
 	 */
 	private static function external(){
 		$file = str_replace(PUB_URL, PUB, URI);
-		$mime = self::file_type($file);
-		$cache = str_replace(PUB, TMP, $file).'.cache';
-		# look for a cached version of the file.
-		if (file_exists($cache)){
-			parent::header(304);
-			die(file_get_contents($file));
-		}
 		# if the requested file exists on the server, serve it, but only if it's
 		# not a text/plain. [unknown]
 		if (file_exists($file)){
-			if ($mime == 'text/plain')
-				parent::warning_403('You are not allowed to see this file.');
+			$mime = self::file_type($file);
+			$time = gmdate('D, d M Y H:i:s', filemtime($file));
+			#$cache = str_replace(PUB, TMP, $file).'.cache';
+			# look for a cached version of the file.
+			if ($mime == 'text/plain')	parent::warning_403('403 forbidden');
 			$file = file_get_contents($file);
-			# write a cache version of the file.
-			$cachedir = pathinfo($cache, PATHINFO_DIRNAME);
-			if (!file_exists($cachedir)) mkdir($cachedir, 0, true);
-			file_put_contents($cache, $file);
-			parent::header(200);
+ 			header("Last-Modified: $time GMT", true);
 			header("Content-Type: $mime");
-			die($file);
+			echo $file;
+			exit(0);
 		}
 		# the user is requesting an unexistent file, check if the server refers
 		# to an application dynamic css / js.
@@ -135,6 +128,7 @@ abstract class Core extends Library {
 			$uri = substr($uri, $pos+1);
 		} else $uri = pathinfo($uri, PATHINFO_BASENAME);
 		if (!empty($app)) $uri = ".$uri";
+		$mime = self::file_type($file);
 		$file = APP.$app.$uri;
 		$file = $file.EXT;
 		if (!file_exists($file) || $mime == 'text/plain')
