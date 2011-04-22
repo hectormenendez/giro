@@ -154,9 +154,6 @@ class Application extends Library {
 	 * Creates an encapsulated scope so the view and extenal files can share it.
 	 */
 	private static function render(){
-		#echo '<pre>';
-		#var_dump(self::$application);
-		#die;
 	 	if (!file_exists(APP_PATH.APP_NAME.'.view'.EXT)) return false;
 	 	# obtain all methods declared on the view set them on the global scope.
 	 	foreach (self::helpers(self::$application->view) as $__k => $__v){
