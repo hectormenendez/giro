@@ -137,7 +137,7 @@ abstract class Core extends Library {
 		# replicate APP constants
 		define('APP_NAME', pathinfo(empty($app)? $uri : $app, PATHINFO_FILENAME));
 		define('APP_PATH', pathinfo($file, PATHINFO_DIRNAME).SLASH);
-		define('APP_URL', URL.APP_NAME);
+		define('APP_URL', URL.APP_NAME.SLASH);
 		# replicate view environment.
 		if (!file_exists(TMP.UUID.'.'.APP_NAME)){
 			# don't send error with html formatting.

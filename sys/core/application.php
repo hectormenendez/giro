@@ -46,7 +46,7 @@ class Application extends Library {
 		# controller exists, define constants
 		define('APP_PATH', pathinfo($path_ctrl, PATHINFO_DIRNAME).SLASH);
 		define('APP_NAME', $ctrl);
-		define('APP_URL', URL.APP_NAME);
+		define('APP_URL', URL.APP_NAME.SLASH);
 		unset($ctrl);
 		# if a model exists, load it first.
 		self::$application = self::construct(true, $args, self::construct(0));
