@@ -105,10 +105,9 @@ class Application extends Library {
 		if (!class_exists($inst, false)) error("Invalid App Declaration.");
 		$inst = new $inst($args);
 		# instantiate view and model if this is a controller
-		if ($x){
+		if ($x===true){
 			$inst->view = new View;
 			$inst->model = &$model;
-			return $inst;
 		}
 		# run pseudo constructor
 		if (method_exists($inst, APP_NAME))
