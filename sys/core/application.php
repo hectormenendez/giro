@@ -104,13 +104,15 @@ class Application extends Library {
 		$inst = APP_NAME.($x? 'Control' : 'Model');
 		if (!class_exists($inst, false)) error("Invalid App Declaration.");
 		$inst = new $inst($args);
-		# if this is a model we're done.
-		if (!$x) return $inst;
-		$inst->view = new View;
-		$inst->model = &$model;
+		# instantiate view and model if this is a controller
+		if ($x){
+			$inst->view = new View;
+			$inst->model = &$model;
+			return $inst;
+		}
 		# run pseudo constructor
 		if (method_exists($inst, APP_NAME))
-			call_user_func_array(array($inst, APP_NAME), $args);
+			call_user_func_array(array($inst, APP_NAME), (array)$args);
 		return $inst;
 	}
 
@@ -152,6 +154,9 @@ class Application extends Library {
 	 * Creates an encapsulated scope so the view and extenal files can share it.
 	 */
 	private static function render(){
+		#echo '<pre>';
+		#var_dump(self::$application);
+		#die;
 	 	if (!file_exists(APP_PATH.APP_NAME.'.view'.EXT)) return false;
 	 	# obtain all methods declared on the view set them on the global scope.
 	 	foreach (self::helpers(self::$application->view) as $__k => $__v){
