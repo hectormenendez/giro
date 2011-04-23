@@ -21,6 +21,15 @@ class Application extends Library {
 	private static $queue = array();
 
 	/**
+	 * Destroys application temp data after a timeout.
+	 */
+	public static function _destruct(){
+		if (!defined('APP_NAME')) return false;
+		if (!$time = self::config('clean_timeout')) $time = 10;
+		shell_exec("nohup php -r \"sleep(".$time."); @unlink('".TMP.UUID.'.'.APP_NAME."');\" > /dev/null & echo $!");
+	}
+
+	/**
 	 * Application Loader
 	 * Checks if an application and its dependant model exists for a given URI,
 	 * if so, loads the Controller & Model Classes so they handle the hussle.
@@ -29,38 +38,153 @@ class Application extends Library {
 	 *
 	 * @return [mixed][reference] Application controlller.
 	 */
-	public static function load(){
-		if (!defined('URI')) error('The URI has not been parsed yet.');
-		if (!self::$default = parent::config('default'))
-			error('Default APP set incorrectly');
-		$uri = self::identify();
-		$ctrl = $uri['ctrl'] == '__index__'? self::$default : $uri['ctrl'];
-		$args = $uri['args'];
-		unset($uri);
-		# Attempt to load the controller.[files have priority over directories]
-		# ie: APP/main.php  overrides APP/main/main.php
-		$found = file_exists($path_ctrl = APP.$ctrl.EXT) ||
-				 file_exists($path_ctrl = APP.$ctrl.SLASH.$ctrl.EXT);
-		if (!$found)
-			parent::error_404($ctrl == self::$default? 'Index 404' : false);
+	public static function load($external=null, $args=null){
+		if (!$external){
+			if (!defined('URI')) error('The URI has not been parsed yet.');
+			if (!self::$default = parent::config('default'))
+				error('Default APP set incorrectly');
+			$uri = self::identify();
+			$ctrl = $uri['ctrl'] == '__index__'? self::$default : $uri['ctrl'];
+			$args = $uri['args'];
+			unset($uri);
+		} else 
+			$ctrl = $external;
+		if (!$path = self::path_find('', $ctrl)) {
+			if ($ctrl == self::$default) error_500('Default Application Missing');
+			error_404(ucfirst($ctrl)." does not exist.");
+		}
 		# controller exists, define constants
-		define('APP_PATH', pathinfo($path_ctrl, PATHINFO_DIRNAME).SLASH);
+		define('APP_PATH', pathinfo($path, PATHINFO_DIRNAME).SLASH);
 		define('APP_NAME', $ctrl);
 		define('APP_URL', URL.APP_NAME.SLASH);
-		unset($ctrl);
-		# if a model exists, load it first.
-		self::$application = self::construct(true, $args, self::construct(0));
-		self::destruct();
+		# construct application
+		$null = null;
+		$name = $external? APP_NAME.'_external' : APP_NAME;
+		self::$application = self::construct($args,
+							 self::construct('model', $null, $null, $name),
+							 self::construct('view',  $null, $null, $name),
+							 $name);
+		if (!$external) self::unload();
 	}
 
 	/**
-	 * Application Unloader
-	 * Destroys application temp data after a timeout.
+	 * Application Destructor
+	 * This will run as soon as the controller ends its execution.
 	 */
-	public static function unload(){
-		if (!defined('APP_NAME')) return false;
-		if (!$time = self::config('clean_timeout')) $time = 10;
-		shell_exec("nohup php -r \"sleep(".$time."); @unlink('".TMP.UUID.'.'.APP_NAME."');\" > /dev/null & echo $!");
+	private static function unload(){
+		self::render();
+		self::queue_run();
+	}
+
+	/**
+	 * Application Constructor
+	 * Instantiates the application and sets it up.
+	 */
+	private static function &construct($args=null, &$model=null, &$view=null, $construct=null){
+		$false = false; 
+		# if an array is sent as first parameter assume controller.
+		# the path checking for it is done in the loader.
+		$type = is_array($args)? 'control' : $args;
+		if ($type != 'control' && !$path = self::path_find($type)) return $false;
+		elseif ($type == 'control') $path = self::path_find();
+		include $path;
+		# Validate Declaration
+		$inst = APP_NAME.ucfirst($type);
+		if (!class_exists($inst, false)) error('Invalid '.ucwords(str_replace(APP_NAME, '', $inst)).' Declaration.');
+		$inst = new $inst($args);
+		# Views don't need constructors.
+		if ($type == 'view') return $inst;
+		# fill out controller.
+		if ($type == 'control'){
+			$inst->view  = &$view;
+			$inst->model = &$model;
+		}
+		# run pseudo constructor
+		if (method_exists($inst, $construct))
+			call_user_func_array(array($inst, $construct), (array)$args);
+		return $inst;
+	}
+
+	/**
+	 * External file identifier
+	 * Catches request to pub folder, check if the user is tryng to load a 
+	 * dynamic file from the framework.
+	 *
+	 * @todo cache management
+	 */
+	public static function external(){
+		$file = str_replace(PUB_URL, PUB, URI);
+		# if the requested file exists on the server, serve it, but only if it's
+		# not a text/plain. [unknown]
+		if (file_exists($file)){
+			$mime = Core::file_type($file);
+			$time = gmdate('D, d M Y H:i:s', filemtime($file));
+			#$cache = str_replace(PUB, TMP, $file).'.cache';
+			# look for a cached version of the file.
+			if ($mime == 'text/plain')	parent::warning_403('403 forbidden');
+			$file = file_get_contents($file);
+ 			header("Last-Modified: $time GMT", true);
+			header("Content-Type: $mime");
+			echo $file;
+			stop();
+		}
+		# the user is requesting an unexistent file, check if the server refers
+		# to an application dynamic css / js.
+		$msg = 'File Not Found.';
+		$uri = str_replace(PUB_URL, '', URI);
+		if (!$ext = pathinfo($uri, PATHINFO_EXTENSION)) parent::error_404($msg);
+		$var = explode('.', substr($uri, 0, strpos($uri,$ext)-1));
+		$dir = explode('/', array_shift($var));
+		$app = array_shift($dir);
+		$path = (empty($dir)? '' :'.'.implode('.',$dir)).'.'.$ext;
+		if (!self::path_find('',$app) || !$path = self::path_find($path,$app))
+			parent::error_404($msg);
+		$mime = Core::file_type($file);
+		if ($mime == 'plain/text') error_500('Internal Server Error');
+		self::load($app, $var);
+		#parent::header(200);
+		header("Last-Modified: ".gmdate('D, d M Y H:i:s',filemtime($path))." GMT", true);
+		header("Content-Type: $mime");
+		self::render($path, $var);
+		stop();
+	}
+
+
+
+	/**
+	 * Render View
+	 * Creates an encapsulated scope so the view and extenal files can share it.
+	 */
+	private static function render($_PATH = null, $_VAR = null){
+		if (!$_PATH && !$_PATH = self::path_find('.html')) return false;
+		elseif(!$_PATH) $__isview= true;
+
+		if (self::$application->view){
+		 	# obtain all methods declared on the view set them on the global scope.
+		 	foreach (self::helpers(self::$application->view) as $__k => $__v){
+		 		if (function_exists($__k)) error("Can't use '$__k' as view-function.");
+		 		eval($__v);
+		 	}
+	 	}
+	 	if (isset($__isview)){
+		 	# now, we make available all the variabes in the global scope for the 
+		 	# view, and for the included css and js, by using a temp php that we'll
+		 	# include here and there.
+		 	$__isview = addslashes(serialize(View::$__vars));
+		 	$__s = ""
+		 	. "<?php\n"
+		 	. "\$__s = unserialize(stripslashes(\"$__isview\"));\n"
+		 	. "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
+		 	. "unset(\$__s,\$__k,\$__v);\n";
+		 	file_put_contents(TMP.UUID.'.'.APP_NAME, $__s);
+
+	 	} else {
+	 		foreach (View::$__vars as $__k => $__v) $$__k = $__v;
+	 		unset($__s,$__k,$__v);
+	 	}
+	 	# if there's a scope available load it.
+	 	if (file_exists(TMP.UUID.'.'.APP_NAME)) include TMP.UUID.'.'.APP_NAME;
+	 	include $_PATH;
 	}
 
 	/**
@@ -83,36 +207,17 @@ class Application extends Library {
 	}
 
 	/**
-	 * Application Destructor
-	 * This will run as soon as the controller ends its execution.
+	 * Application Path Finder
+	 * Attempt to load the controller.[files have priority over directories]
+	 * ie: APP/main.php  overrides APP/main/main.php
 	 */
-	private static function destruct(){
-		self::render();
-		self::queue_run();
-	}
-
-	/**
-	 * Application Constructor
-	 * Instantiates the application and sets it up.
-	 */
-	private static function &construct($x=true, $args=null, &$model=null){
+	private static function path_find($type = '', $app = APP_NAME){
+		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
 		$false = false;
-		$found = file_exists($path = APP.APP_NAME.($x? '':'.model').EXT) ||
-				 file_exists($path = APP.APP_NAME.SLASH.($x? '':'model').EXT);		
-		if (!$found)  return $false;
-		include $path;
-		$inst = APP_NAME.($x? 'Control' : 'Model');
-		if (!class_exists($inst, false)) error("Invalid App Declaration.");
-		$inst = new $inst($args);
-		# instantiate view and model if this is a controller
-		if ($x===true){
-			$inst->view = new View;
-			$inst->model = &$model;
-		}
-		# run pseudo constructor
-		if (method_exists($inst, APP_NAME))
-			call_user_func_array(array($inst, APP_NAME), (array)$args);
-		return $inst;
+		$found = file_exists($path = APP.$app.$type) ||
+				 file_exists($path = APP.$app.SLASH.$app.$type);		
+		if (!$found) return false;
+		return $path;
 	}
 
 	/**
@@ -146,31 +251,6 @@ class Application extends Library {
 		# uri is empty, trigger default controller.
 		else $uri = array('ctrl'=>'__index__', 'args'=>array());
 		return $uri;
-	}
-
-	/**
-	 * Render View
-	 * Creates an encapsulated scope so the view and extenal files can share it.
-	 */
-	private static function render(){
-	 	if (!file_exists(APP_PATH.APP_NAME.'.view'.EXT)) return false;
-	 	# obtain all methods declared on the view set them on the global scope.
-	 	foreach (self::helpers(self::$application->view) as $__k => $__v){
-	 		if (function_exists($__k)) error("Can't use '$__k' as view-function.");
-	 		eval($__v);
-	 	}
-	 	# now, we make available all the variabes in the global scope for the 
-	 	# view, and for the included css and js, by using a temp php that we'll
-	 	# include here and there.
-	 	$__s = "<?php\n"
-	 		 .	"\$__s = unserialize(stripslashes(\"". addslashes(serialize(View::$__vars))."\"));\n"
-	 		 .  "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
-	 		 .  "unset(\$__s,\$__k,\$__v);\n";
-	 	file_put_contents(TMP.UUID.'.'.APP_NAME, $__s);
-	 	# remove unneeded vars, and call the view.
-	 	unset($__s,$__k,$__v);
-	 	include TMP.UUID.'.'.APP_NAME;
-	 	include APP_PATH.APP_NAME.'.view'.EXT;
 	}
 
 	/**

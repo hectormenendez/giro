@@ -39,49 +39,6 @@ class View extends ApplicationCommon {
 	}
 
 	/**
-	 * HTML Template
-	 * Adds the basic tags needed for a html experience.
-	 *
-	 * @todo Add the HTML folder as a constant. [templates]
-	 * @todo Language and Charset, set by the framework.
-	 */
-	public static function html($title = ''){
-		static $html = false;
-	
-		$jspos = Library::config('js_position', null, 'application');
-		if (!$jspos) $jspos = 'ini';
-
-		if (is_string($html)) return;
-		$html = Library::file(SYS.'html/html5.html', false);
-		View::__tag_add("js$jspos", '//code.jquery.com/jquery.min.js');
-		# if existan, add JS and CSS
-		if (file_exists(APP_PATH.APP_NAME.'.css'.EXT))
-			View::__tag_add('link', 'stylesheet', PUB_URL.APP_NAME.'.css');
-		if (file_exists(APP_PATH.APP_NAME.'.js'.EXT))
-			View::__tag_add("js$jspos", PUB_URL.APP_NAME.'.js');		
-		# this vars should be set by the framework, but until then, they'll be fixed
-		$vars = array(
-			'lang' => 'es-mx',
-			'charset' => 'utf-8',
-			'title' => $title,
-			'favicon' => PATH.'pub/favicon.ico'
-		);
-		foreach ($vars as $k => $v) $html = str_replace("%$k%", $v, $html);
-		# write tags and split the file.
-		$html = explode('<%content%>', View::__tag_write($html));
-		# write the latter piece after parsing the view;
-		Application::queue('View::_html', $html[1]);
-		return $html[0];
-	}
-
-	/**
-	 * Closes html template.
-	 */
-	public static function _html($html){
-		echo $html;
-	}
-
-	/**
 	 * Add HTML tags
 	 * Reeplace <%code%> with a tag template specified here.
 	 */

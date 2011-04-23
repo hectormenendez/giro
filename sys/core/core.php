@@ -27,7 +27,7 @@ abstract class Core extends Library {
 		self::$config = self::config_get();
 		spl_autoload_register('self::library');
 		self::uri_parse();
-		if (strpos(URI, PUB_URL)!==false) self::external();
+		if (strpos(URI, PUB_URL)!==false) Application::external();
 		else Application::load();
 	}
 
@@ -80,7 +80,6 @@ abstract class Core extends Library {
 		foreach (array_reverse(self::$library) as $l){
 			if (method_exists($l,'_destruct')) call_user_func("$l::_destruct");
 		}
-		Application::unload();
 	}
 
 	/**
@@ -93,64 +92,6 @@ abstract class Core extends Library {
 			error('The URI is unavailable [crap].');
 		# catch calls to pub dir, and parse them differently.
 		define('URI', str_replace(BASE,'',$_SERVER[$key]));
-	}
-
-
-	/**
-	 * External file identifier
-	 * Catches request to pub folder, check if the user is tryng to load a 
-	 * dynamic file from the framework.
-	 *
-	 * @todo cache management
-	 */
-	private static function external(){
-		$file = str_replace(PUB_URL, PUB, URI);
-		# if the requested file exists on the server, serve it, but only if it's
-		# not a text/plain. [unknown]
-		if (file_exists($file)){
-			$mime = self::file_type($file);
-			$time = gmdate('D, d M Y H:i:s', filemtime($file));
-			#$cache = str_replace(PUB, TMP, $file).'.cache';
-			# look for a cached version of the file.
-			if ($mime == 'text/plain')	parent::warning_403('403 forbidden');
-			$file = file_get_contents($file);
- 			header("Last-Modified: $time GMT", true);
-			header("Content-Type: $mime");
-			echo $file;
-			exit(0);
-		}
-		# the user is requesting an unexistent file, check if the server refers
-		# to an application dynamic css / js.
-		$uri = str_replace(PUB_URL, '', URI);
-		$app = '';
-		if(($pos = strpos($uri, SLASH)) !== false){
-			$app = substr($uri, 0, $pos);
-			$uri = substr($uri, $pos+1);
-		} else $uri = pathinfo($uri, PATHINFO_BASENAME);
-		if (!empty($app)) $uri = ".$uri";
-		$mime = self::file_type($file);
-		$file = APP.$app.$uri;
-		$file = $file.EXT;
-		if (!file_exists($file) || $mime == 'text/plain')
-			error_404('404 File not Found');
-		# the file exists.
-		# replicate APP constants
-		define('APP_NAME', pathinfo(empty($app)? $uri : $app, PATHINFO_FILENAME));
-		define('APP_PATH', pathinfo($file, PATHINFO_DIRNAME).SLASH);
-		define('APP_URL', URL.APP_NAME.SLASH);
-		# replicate view environment.
-		if (!file_exists(TMP.UUID.'.'.APP_NAME)){
-			# don't send error with html formatting.
-			parent::header(500);
-			die('Application Fingerprint Missmatch :'.UUID);
-		}
-		parent::header(200);
-		header("Content-Type: $mime");
-		include TMP.UUID.'.'.APP_NAME;
-		$__path = $file;
-		unset($file, $mime, $uri, $app, $pos);
-		include ($__path);
-		exit(0);
 	}
 	
 	/**
@@ -222,7 +163,7 @@ abstract class Core extends Library {
 	 * Too simple,just extracts the file extension and retrieves its mime type
 	 * according to config file.
 	 */
-	private static function file_type($path){
+	public static function file_type($path){
 		$type = self::config('mime-types');
 		# extract extension.
 		$ext = pathinfo($path, PATHINFO_EXTENSION);
