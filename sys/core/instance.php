@@ -67,7 +67,12 @@ abstract class Instance extends Library {
 	 */
 	private function __append_param($name,$args){
 		# Get method's declared parameters.
-		$params = $this->__parent->getMethod($name)->getParameters();
+		try {
+			$params = $this->__parent->getMethod($name)->getParameters();
+		} catch(ReflectionException $e){
+			if (Core::config('error')) die('Instance :: '.$e->getMessage());
+			else die('Instance Error');
+		}
 		# if an argument is not set, set its default. [unless name begins with '__']
 		# i know the one-liner is a pain, but this way getName only gets called when needed.
 		$c = count($params);
