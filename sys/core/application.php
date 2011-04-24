@@ -143,8 +143,7 @@ class Application extends Library {
 		$mime = Core::file_type($file);
 		if ($mime == 'plain/text') error_500('Internal Server Error');
 		self::load($app, $var);
-		#parent::header(200);
-		header("Last-Modified: ".gmdate('D, d M Y H:i:s',filemtime($path))." GMT", true);
+		#header("Last-Modified: ".gmdate('D, d M Y H:i:s',filemtime($path))." GMT", true);
 		header("Content-Type: $mime");
 		self::render($path, $var);
 		stop();
@@ -183,6 +182,9 @@ class Application extends Library {
 	 	}
 	 	# if there's a scope available load it.
 	 	if (file_exists(TMP.UUID.'.'.APP_NAME)) include TMP.UUID.'.'.APP_NAME;
+		parent::header(200);
+		header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
 	 	include $_PATH;
 	}
 
