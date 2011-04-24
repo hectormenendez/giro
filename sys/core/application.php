@@ -50,8 +50,9 @@ class Application extends Library {
 		} else 
 			$ctrl = $external;
 		if (!$path = self::path_find('', $ctrl)) {
-			if ($ctrl == self::$default) error_500('Default Application Missing');
-			error_404(ucfirst($ctrl)." does not exist.");
+			if ($ctrl == self::$default)
+				parent::error_500('Default Application Missing');
+			parent::error_404(ucfirst($ctrl)." does not exist.");
 		}
 		# controller exists, define constants
 		define('APP_PATH', pathinfo($path, PATHINFO_DIRNAME).SLASH);
