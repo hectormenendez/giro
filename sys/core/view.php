@@ -22,7 +22,8 @@ class View extends ApplicationCommon {
 	 */
 	public function &__set($key, $val){
 		self::$__vars[$key] = $val;
-		return self::$__vars[$key];
+		$this->$key = $val;
+		return $this->$key;
 	}
 
 	/**
