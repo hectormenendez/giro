@@ -43,7 +43,28 @@ abstract class DB extends Library {
 
 
 	/**
-	 * SQL Executor
+	 * SQL Query
+	 * Plain and simple, make a query return results. 
+	 *
+	 * @param	[string] 			$sql	SQL to query.
+	 * @param	[mixed:infinite]	$rep	Replacements to be used a la printf.
+	 *
+	 * @return	[array]	Array of results.
+	 */
+	public static function query($sql = ''){
+		$args = func_get_args();
+		list($sql, $instance) = self::arguments($args);
+		try {
+			$qry = null;
+			$qry = $instance->query($sql);
+		}
+		catch( PDOException $e ){ return self::error($e); }
+		return ($qry)? $qry->fetchAll(PDO::FETCH_ASSOC) : false;
+	}
+
+
+	/**
+	 * SQL Execute
 	 * As the name implies, executes as SQL statement and returns the number of
 	 * affected rows.
 	 *
@@ -65,32 +86,14 @@ abstract class DB extends Library {
 		return (int) $exec;
 	}
 
+
+################################################################ INTERNALS #####
+
 	/**
-	 * SQL Queries
-	 * Plain and simple, make a query return results. 
+	 * Arguments Parser
+	 * Checks for DB instance and format/escapes SQL.
 	 *
-	 * @param	[string] 			$sql	SQL to query.
-	 * @param	[mixed:infinite]	$rep	Replacements to be used a la printf.
-	 *
-	 * @return	[array]	Array of results.
 	 */
-	public static function query($sql = ''){
-		$args = func_get_args();
-		list($sql, $instance) = self::arguments($args);
-		try {
-			$qry = null;
-			$qry = $instance->query($sql);
-		}
-		catch( PDOException $e ){ return self::error($e); }
-		return ($qry)? $qry->fetchAll() : false;
-	}
-
-	private static function error(&$exception){
-		$e = $exception->getMessage();
-		$e = substr($e, strpos($e, ':') +1 );
-		return error($e);
-	}
-
 	private static function arguments(&$args){
 		$sql = array_shift($args);
 		$ins = array_pop($args);
@@ -100,6 +103,16 @@ abstract class DB extends Library {
 		$sql = sqlite_escape_string( vsprintf($sql, $args) );
 		return array(&$sql, &$ins);
 	}
+
+	/**
+	 * PDOException extractor.
+	 */
+	private static function error(&$exception){
+		$e = $exception->getMessage();
+		$e = substr($e, strpos($e, ':') +1 );
+		return error($e);
+	}
+
 }
 
 class dbInstance extends Instance {}
