@@ -245,7 +245,10 @@ class Application extends Library {
 			$uri = preg_replace('/[^\/'.$char.']/','',$uri);
 			$uri = explode("/", $uri);
 			array_shift($uri);
-			$uri = array('ctrl'=>array_shift($uri), 'args'=>$uri);
+			$ctrl = array_shift($uri);
+			# clean empty strings. #### WARNING: QUICKFIX ####
+			foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
+			$uri = array('ctrl'=>$ctrl, 'args'=>$uri);
 		}
 		# uri is empty, trigger default controller.
 		else $uri = array('ctrl'=>'__index__', 'args'=>array());
