@@ -156,9 +156,8 @@ class Application extends Library {
 	 * Creates an encapsulated scope so the view and extenal files can share it.
 	 */
 	private static function render($_PATH = null, $_VAR = null){
+		if (!$_PATH) $__isview = true;
 		if (!$_PATH && !$_PATH = self::path_find('.html')) return false;
-		elseif(!$_PATH) $__isview= true;
-
 		if (self::$application->view){
 		 	# obtain all methods declared on the view set them on the global scope.
 		 	foreach (self::helpers(self::$application->view) as $__k => $__v){
@@ -177,7 +176,6 @@ class Application extends Library {
 		 	. "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
 		 	. "unset(\$__s,\$__k,\$__v);\n";
 		 	file_put_contents(TMP.UUID.'.'.APP_NAME, $__s);
-
 	 	} else {
 	 		foreach (View::$__vars as $__k => $__v) $$__k = $__v;
 	 		unset($__s,$__k,$__v);
@@ -211,7 +209,7 @@ class Application extends Library {
 	 * Attempt to load the controller.[files have priority over directories]
 	 * ie: APP/main.php  overrides APP/main/main.php
 	 */
-	private static function path_find($type = '', $app = APP_NAME){
+	public static function path_find($type = '', $app = APP_NAME){
 		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
 		$false = false;
 		$found = file_exists($path = APP.$app.$type) ||
