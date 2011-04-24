@@ -1,20 +1,14 @@
 <?php
 /**
- * View
- * public non-underscored methods will be available as normal functions inside 
- * the view file.
- *
- * @note Remember that these function will run in the global scope, 
- * 		 so dont treat them as class members, technically speaking, they won't 
- *		 be inside any class.
- *
- * @note DO NOT USE MULTI-LINE COMMENTS INSIDE FUNCTIONS. sanitization hasn't
- 		 been implemented yet.
+ * @todo rename __tag methods and make sure they are not passed in App::render()
  */
 class View extends ApplicationCommon {
 
 	public static $__vars = array();
-	public static $__tags = array();
+	public static $__tags = array(
+		'view' => array(),
+		'app'  => array()
+	);
 
 	/**
 	 * Allow the user to store variables indistinctively.
@@ -44,7 +38,12 @@ class View extends ApplicationCommon {
 	 * Reeplace <%code%> with a tag template specified here.
 	 */
 	public static function __tag_add($name, $key = '', $cont = ''){
-		if (!isset(self::$__tags[$name])) self::$__tags[$name] = array();
+		# if the request comes from an instanced application, add the tags 
+		# in reverse order, so the tags appear after the ones instanced by 
+		# the templates on the View class.
+		$type = stripos(get_called_class(), APP_NAME) !== false? 'app' : 'view';
+		if (!isset(self::$__tags[$type][$name]))
+			self::$__tags[$type][$name] = array();
 		switch ($name) {
 		  case 'meta':
 		    $tag = "<meta name='".((string)$key)."' content='".((string)$cont)."'>\n";
@@ -59,8 +58,7 @@ class View extends ApplicationCommon {
 		  default:
 		  	warning("Invalid Tag '$name'");
 		}
-		self::$__tags[$name][] = $tag;
-
+		array_push(self::$__tags[$type][$name], $tag);
 	}
 
 	/**
@@ -68,14 +66,16 @@ class View extends ApplicationCommon {
 	 * Replaces all matches of tags in template.
 	 */
 	public static function __tag_write($content = ''){
+		# merge and get the right order of tags
+		$tags = array_merge_recursive(self::$__tags['view'], self::$__tags['app']);
 		# Replaces Template tags with user sent ones.
 		if (!preg_match_all('/<%((?!content)\w+)%>/i', (string)$content, $match))
 			return $content;
 		foreach($match[1] as $i=>$key){
 			$rep = '';
-			if (isset(self::$__tags[$key])){
+			if (isset($tags[$key])){
 				$first = true;
-				foreach(self::$__tags[$key] as $tag){
+				foreach($tags[$key] as $tag){
 					# add a tab so after the first write.
 					$rep .= $first || $key=='jsend'? $tag : "\t".$tag;
 					$first = false;
