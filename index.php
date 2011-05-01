@@ -152,8 +152,8 @@ function _error($action = null, $msg = null){
 		$file = substr($arg[2], (int)strrpos($arg[2], '/')).":{$arg[3]}";
 		if (!IS_CLI) echo '<pre>';
 		echo "$type: {$arg[1]}\t[".str_replace(SLASH,'', $file)."]\n";
-		if (!IS_CLI)echo '<pre>';
-		return false;
+		if (!IS_CLI)echo '</pre>';
+		exit(2);
 	}
 }
 
