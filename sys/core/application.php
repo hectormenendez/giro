@@ -171,7 +171,7 @@ class Application extends Library {
 		 	# include here and there.
 		 	$__isview = addslashes(serialize(View::$__vars));
 		 	$__s = ""
-		 	. '<'.'?'.'php\n"
+		 	. '<'.'?'."php\n"
 		 	. "\$__s = unserialize(stripslashes(\"$__isview\"));\n"
 		 	. "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
 		 	. "unset(\$__s,\$__k,\$__v);\n";
