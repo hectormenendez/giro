@@ -111,10 +111,18 @@ class Application extends Library {
 	 * Catches request to pub folder, check if the user is tryng to load a 
 	 * dynamic file from the framework.
 	 *
+	 * @log 2011/MAY/06 QuickFix: GET request were being considered part of the
+	 *					file thus sending 404s. When dealing with cache 
+	 *					[client side], using GET forces reload, so this was
+	 *					most important to fix.
 	 * @todo cache management
 	 */
 	public static function external(){
 		$file = str_replace(PUB_URL, PUB, URI);
+		# separate any existing GET request variable, we'll ignore it anyways.
+		$get = explode('?', $file);
+		$file = $get[0];
+		$get = isset($get[1])? $get[1] : '';
 		# if the requested file exists on the server, serve it, but only if it's
 		# not a text/plain. [unknown]
 		if (file_exists($file)){
