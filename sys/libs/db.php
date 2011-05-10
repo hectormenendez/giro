@@ -100,15 +100,20 @@ abstract class DB extends Library {
 	/**
 	 * Arguments Parser
 	 * Checks for DB instance and format/escapes SQL.
-	 *
 	 */
 	private static function arguments(&$args){
 		$sql = array_shift($args);
 		$ins = array_pop($args);
 		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
 		if (!$ins instanceof PDO) error('Missing DB instance.');
-		# format sql with remaining arguments.
-		foreach($args as $k=>$v) $args[$k] = $ins->quote($v);
+		# format and sanitize sql using remaining args
+		# but first check if the user is actually sending the correct number of them..
+		$args = (array)$args; # just in case.
+		$count = count($args);
+		# oh my, I'm proud of this regex.
+		$regex = preg_match_all('/(?<!%)%(?!%+)(?:(?:\d+\$)?[bcdeEufFgGosxX])?/', $sql, $match);
+		if ($count !== $regex) error("Expecting $regex arguements, got $count. [".@implode(', ',$match[0]).']');
+		foreach((array)$args as $k=>$v) $args[$k] = $ins->quote($v);
 		$sql = vsprintf($sql, $args);
 		return array(&$sql, &$ins);
 	}
