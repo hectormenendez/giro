@@ -41,6 +41,14 @@ abstract class DB extends Library {
 		return $instance;
 	}
 
+	/**
+	 * Return a reference to the original PDO instance, hardcore baby!
+	 */
+	public static function &PDO(){
+		$argv =func_get_arg(0);
+		return $argv;
+	}
+
 
 	/**
 	 * SQL Query
@@ -100,7 +108,8 @@ abstract class DB extends Library {
 		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
 		if (!$ins instanceof PDO) error('Missing DB instance.');
 		# format sql with remaining arguments.
-		$sql = sqlite_escape_string( vsprintf($sql, $args) );
+		foreach($args as $k=>$v) $args[$k] = $ins->quote($v);
+		$sql = vsprintf($sql, $args);
 		return array(&$sql, &$ins);
 	}
 
