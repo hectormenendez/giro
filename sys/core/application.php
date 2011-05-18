@@ -9,6 +9,12 @@ class Application extends Library {
 	private static $default = null;
 	private static $application = null;
 	private static $queue = array();
+	private static $routes = null;
+
+	public static function _construct(){
+		if (!is_array(self::$routes = self::config('routes')))
+			error('Missing Routing Configuration.');
+	}
 
 	/**
 	 * Destroys application temp data after a timeout.
@@ -31,7 +37,7 @@ class Application extends Library {
 	public static function load($external=null, $args=null){
 		if (!$external){
 			if (!defined('URI')) error('The URI has not been parsed yet.');
-			if (!self::$default = parent::config('default'))
+			if (!self::$default = self::config('default'))
 				error('Default APP set incorrectly');
 			$uri = self::identify();
 			$ctrl = $uri['ctrl'] == '__index__'? self::$default : $uri['ctrl'];
@@ -241,7 +247,18 @@ class Application extends Library {
 		# get safe characters
 		if (!$char = parent::config('safe_chars')) error('Missing URI chars');
 		# sanitize a little bit, by removing double slashes
-		while (strpos($uri,'//')!==false) $uri = str_replace('//','/',$uri);					
+		while (strpos($uri,'//')!==false) $uri = str_replace('//','/',$uri);
+		# check if any custom route matches.
+		$tmpuri = $uri[0]=='/'? substr($uri,1) : $uri; # remove root
+		foreach(self::$routes as $rx=>$route){
+			try {
+				if (!preg_match($rx, $tmpuri)) continue;
+				$uri = '/'.preg_replace($rx, $route, $tmpuri);
+				break;
+			} catch (Exception $e) {
+				error('Incorrect Routing Declaration');
+			}
+		}
 		# uri starts with '?' then treat it as a GET request
 		if (isset($uri[0]) && $uri[0] == '?'){
 			$uri = preg_replace('/[^\&\='.$char.']/','',substr($uri,1));
