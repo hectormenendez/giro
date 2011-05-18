@@ -2,7 +2,7 @@
 /**
  * @todo rename __tag methods and make sure they are not passed in App::render()
  */
-class View extends ApplicationCommon {
+class Application_View {
 
 	public static $__vars = array();
 	public static $__tags = array(
@@ -22,12 +22,12 @@ class View extends ApplicationCommon {
 
 	/**
 	 * Method redirector
-	 * Just works for taggin functions, falls back to parent's.
+	 * Just works for taggin functions,
 	 */
 	public function __call($name, $args){
-		# only acceot tag adds, fall back to parent's call magin method.
+		# only acceot tag adds;
 		if (!is_string($name) || stripos(substr($name, 0, 4), 'tag_') === false)
-			return parent::__call($name, $args);
+			return false; #::__call($name, $args);
 
 		array_unshift($args, substr($name, 4));
 		call_user_func_array('self::__tag_add', $args);

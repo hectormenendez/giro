@@ -60,66 +60,22 @@ abstract class Library {
 	 *
 	 * @return	[mixed]	
 	 */
-	public static function &file($path=null, $array=true, $flags=0){
-		$false = false;
+	public static function file($path=null, $array=true, $flags=0){
 		if ($path === null) return self::$file;
-		if (!file_exists($path)) return $false;
+		if (!file_exists($path)) return false;
+		$key = $path;
 		$mode = $array? 'array' : 'string';
-		if (isset(self::$file[$path][$mode])) return $file[$path][$mode];
-		if (!isset(self::$file[$path])) self::$file[$path] = array();
-		self::$file[$path][$mode] = $array?
+		if (isset(self::$file[$key][$mode])) return self::$file[$key][$mode];
+		if (!isset(self::$file[$key])) self::$file[$key] = array();
+		self::$file[$key][$mode] = $array?
 			file($path, $flags) : 
 			file_get_contents($path);
-		return self::$file[$path][$mode];
+		return self::$file[$key][$mode];
 	}
-
 
 	/**
-	 * Encryptor / Decryptor
-	 * Replaces string according to key, and obfuscates a little bit by reversing
-	 * al characters hex version. It's not bullet proof, but it will hold ok.
-	 *
-	 * @param [string]$action 	encrypt/decrypt, nothing more, nothing less.
-	 * @param [string]$str		The string to encrypt
-	 * @param [string]$key 		the secret key.
+	 * Header Shorthand
 	 */
-	public static function cryptor($action=false, $str=false, $key=false){
-		if (($action != 'encrypt' && $action != 'decrypt') ||
-			!is_string($str) || !is_string($key) || empty($str) || empty($key))
-			error('All arguments are required and type string in Cryptor.');
-		$encrypt = function ($str, $key){
-			$str = le_crypt(strrev($str), $key);
-			$lst = strlen($str);
-			$res = '';
-			for ($i=0; $i < $lst; $i++){
-				if (strlen($tmp = dechex(ord($str[$i]))) == 1) $tmp = '0'.$tmp;
-				$res .= strrev($tmp);
-			}
-			return $res;
-		};
-		$decrypt = function ($str, $key){
-			$lst = strlen($str);
-			$res = '';
-			for ($i=0; $i < $lst; $i+=2) $res .= chr(hexdec(strrev(substr($str,$i, 2))));
-			return strrev(le_crypt($res,$key));
-		};
-		if (!function_exists('le_crypt')):
-		# the magic happens here.
-		function le_crypt($str, $key){
-			$res = '';
-			$len_key = strlen($key);
-			$len_str = strlen($str);
-			$i = 0;
-			for(; $i < $len_str; $i++)
-				$res.= chr((ord($str[$i])^ord($key[$i % $len_key])) & 0xFF); #here
-			return $res;		
-		}
-		endif;
-		# redirect
-		return $$action($str, $key);
-	}
-
-
 	public static function header($code = null){
 		if (headers_sent()) return false;
 		if (is_int($code)){
@@ -163,6 +119,33 @@ abstract class Library {
 		else return false;
 		header($head);
 		return true;
+	}
+
+	/**
+	 * No Comments
+	 * Strip comments from given source code.
+	 *
+	 * @note an open tag is added by default so the tokenizer works.
+	 */
+	public static function nocomments($str, $addopentag=true){
+		$comment = array(T_COMMENT, T_DOC_COMMENT);
+		$foundopentag = false;
+		if ($addopentag) $str = '<'.'?'.$str;
+		$tokens = token_get_all($str);
+		$source = '';
+		foreach($tokens as $token){
+			if (is_array($token)){
+				# if we added an open tag, ignore it.
+				if ($addopentag && !$foundopentag && $token[0] === T_OPEN_TAG){
+					$foundopentag = true;
+					continue;
+				}
+				if (in_array($token[0], $comment)) continue;
+				$token = $token[1];
+			}
+			$source .= $token;
+		}
+		return $source;
 	}
 
 	/**
@@ -225,5 +208,5 @@ abstract class Library {
 		# reached the beginning of the file, sorry mate.
 		return __CLASS__;
 	}
-	
+
 }

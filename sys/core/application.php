@@ -1,18 +1,8 @@
 <?php
-/**
- * Application Common
- * Th construction of this classes is done manually in Core::app_load.
- */
-class ApplicationCommon {
-	/**
-	 * Redirect all unknown method calls to static Library.
-	 */
-	public function __call($name, $args){
-		if (method_exists('Library', $name))
-			return call_user_func_array("Library::$name", $args);
-		error("Undefined method $name");
-	}
-}
+
+include CORE.'application_control'.EXT;
+include CORE.'application_model'.EXT;
+include CORE.'application_view'.EXT;
 
 class Application extends Library {
 
@@ -49,21 +39,24 @@ class Application extends Library {
 			unset($uri);
 		} else 
 			$ctrl = $external;
+		# all controllers starting with underscore are treated as private.
+		$error404 = ucfirst($ctrl)." does not exist.";
+		if ($ctrl[0] == '_') parent::error_404($error404);
 		if (!$path = self::path_find('', $ctrl)) {
 			if ($ctrl == self::$default)
 				parent::error_500('Default Application Missing');
-			parent::error_404(ucfirst($ctrl)." does not exist.");
+			parent::error_404($error404);
 		}
 		# controller exists, define constants
 		define('APP_PATH', pathinfo($path, PATHINFO_DIRNAME).SLASH);
 		define('APP_NAME', $ctrl);
 		define('APP_URL', URL.APP_NAME.SLASH);
-		# construct application
+		#|application
 		$null = null;
 		$name = $external? APP_NAME.'_external' : APP_NAME;
-		self::$application = self::construct($args,
-							 self::construct('model', $null, $null, $name),
-							 self::construct('view',  $null, $null, $name),
+		self::$application = self::assamble($args,
+							 self::assamble('model', $null, $null, $name),
+							 self::assamble('view',  $null, $null, $name),
 							 $name);
 		if (!$external) self::unload();
 	}
@@ -81,17 +74,26 @@ class Application extends Library {
 	 * Application Constructor
 	 * Instantiates the application and sets it up.
 	 */
-	private static function &construct($args=null, &$model=null, &$view=null, $construct=null){
-		$false = false; 
+	private static function &assamble($args=null, &$model=null, &$view=null, $construct=null){
+		$false = false;
 		# if an array is sent as first parameter assume controller.
-		# the path checking for it is done in the loader.
+		# the path checking for it is already done in the loader.
 		$type = is_array($args)? 'control' : $args;
-		if ($type != 'control' && !$path = self::path_find($type)) return $false;
-		elseif ($type == 'control') $path = self::path_find();
-		include $path;
-		# Validate Declaration
-		$inst = APP_NAME.ucfirst($type);
-		if (!class_exists($inst, false)) error('Invalid '.ucwords(str_replace(APP_NAME, '', $inst)).' Declaration.');
+		# determine if master MVCs are available
+		$masterpath = file_exists(APP."_$type".EXT)? APP."_$type".EXT : false;
+		$path = self::path_find($type != 'control'? $type : null);
+		if (!$path && !$masterpath) return $false;
+		elseif (!$path && $masterpath){
+			$inst = $type;
+			include $masterpath;
+		} else { 
+			$inst = APP_NAME.ucfirst($type);
+			# if no master MVC found create a dummy, otherwise, just include it.
+			if (!$masterpath) eval("class $type extends application_$type {}");
+			else include $masterpath;
+			include $path;
+		}
+		if (!class_exists($inst, false)) error('Invalid '.ucfirst($type).' Declaration.');
 		$inst = new $inst($args);
 		# Views don't need constructors.
 		if ($type == 'view') return $inst;
@@ -256,8 +258,7 @@ class Application extends Library {
 			$uri = explode("/", $uri);
 			array_shift($uri);
 			$ctrl = array_shift($uri);
-			# clean empty strings. #### WARNING: QUICKFIX ####
-			foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
+			# clean empty strings. #### WARNING: QUICKFIX ###			foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
 			$uri = array('ctrl'=>$ctrl, 'args'=>$uri);
 		}
 		# uri is empty, trigger default controller.
@@ -270,27 +271,29 @@ class Application extends Library {
 	 * Retrieve method declarations on given class.
 	 */
 	private static function helpers($class){
-	 	$view = new ReflectionClass($class);
-	 	$file = parent::file($view->getFileName());
+	 	$reflect = new ReflectionClass($class);
 	 	$methods = array();
 	 	# get only methods that are not defined here.
-	 	$m = array_diff(get_class_methods($class),get_class_methods(__CLASS__));
+	 	$m = array_diff(get_class_methods($class), get_class_methods(__CLASS__));
 	 	foreach ($m as $methodname){
-	 		$method = $view->getMethod($methodname);
+	 		$method = $reflect->getMethod($methodname);
+			$file = parent::file($method->getFileName());
 	 		if ($method->isPrivate() || $method->isProtected()) continue;
 	 		# ignore methods starting with underscore
 	 		if ($methodname[0] == '_') continue;
-	 		# obtain method's source [and cleanit a little]
-	 		$src = array();
-	 		for($i=$method->getStartLine()-1; $i < $method->getEndLine(); $i++){
-	 			$line = preg_replace('%[^\S]+(?:#|//).*%','', $file[$i]);
-	 			$line = preg_replace('/\s+/',' ',trim($line));
-	 			if (!empty($line)) $src[] = $line;
+	 		# obtain method's source [removing comments and double spacing]
+	 		$src = '';
+	 		for($i = $method->getStartLine()-1; $i < $method->getEndLine(); $i++)
+	 			$src .= $file[$i];
+	 		$src = trim(preg_replace('/\s+/',' ',parent::nocomments($src)));
+	 		if (empty($src)){
+	 			var_dump($method->getStartLine(), $method->getEndLine());
 	 		}
 	 		# remove visibility declarations
 	 		$rx = '/(\s*(?:final|abstract|static|public|private|protected)\s)/i';
-	 		$src[0] = preg_replace($rx,'', substr($src[0], 0, strpos($src[0], '{')+1));
-	 		$methods[$methodname] = implode(' ', $src);
+	 		$old = substr($src, 0, strpos($src, '{'));
+	 		$new = preg_replace($rx, '',$old);
+	 		$methods[$methodname] = str_replace($old, $new, $src);
 	 	}
 	 	return $methods;
 	 }

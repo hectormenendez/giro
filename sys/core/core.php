@@ -63,7 +63,19 @@ abstract class Core extends Library {
 		if (in_array($name, self::$library)) return true;
 		$found = file_exists($path=CORE.$name.EXT) ||
 				 file_exists($path=LIBS.$name.EXT);
-		if (!$found) error("Library <u>$name</u> does not exist");
+		if (!$found) {
+			$rx = '/\w+(control|model|view)/';
+			# If an APP is active, check its folder.
+			if (!defined('APP_NAME') || !preg_match($rx, $name, $match))
+				error("Library $name does not exist.");
+			$replace = ".{$match[1]}".EXT;
+			if ($match[1] == 'control') $replace = EXT;
+			$path = APP.str_ireplace($match[1], $replace, $name);
+			if (!file_exists($path)) error("Application $name is undefined.");
+			include $path;
+			array_push(self::$library, $name);
+			return true;
+		}
 		include $path;
 		if (method_exists($name,'_construct'))
 			call_user_func("$name::_construct");
