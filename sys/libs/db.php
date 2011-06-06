@@ -27,7 +27,7 @@ abstract class DB extends Library {
 		# If not a valid path specified, generate one for the app.
 		# this should issue a warning of some sort.
 		if (!$path || stripos($path, 'memory') === false && !file_exists($path))
-			$path = TMP.strtolower(APPNAME).'.db';
+			$path = TMP.strtolower(APP_NAME).'.db';
 		# right now only the sqlite driver will be available.		
 		try { 
 			$dbo = new PDO('sqlite:'.$path);
