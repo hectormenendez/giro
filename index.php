@@ -56,8 +56,9 @@ define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
 
 define('URL','http://'.(IS_CLI? 'localhost' : $_SERVER['HTTP_HOST']).PATH);
 
-define('PUB_URL', substr(PUB,strpos(ROOT, PATH)));
-
+$x = strpos(ROOT, PATH);
+define('PUB_URL', !$x? str_replace(ROOT, '/', PUB) : substr(PUB, $x));
+ 
 ########################################################################### UUID
 
 # Obtain the IP trying to overpass, proxies.
@@ -71,10 +72,6 @@ define('IP',$x);
 
 # Append the user agent and a salt
 define('UUID',md5(IP.$_SERVER['HTTP_USER_AGENT'].'GiRo23'));
-# Append all HTTP_ACCEPT keys.
-#foreach (array('','_ENCODING') as $i)
-#	$x .= $_SERVER['HTTP_ACCEPT'.$i];
-
 
 unset($x, $k,$v,$ext,$_E);
 
