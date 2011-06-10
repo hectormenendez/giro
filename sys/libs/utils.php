@@ -12,6 +12,7 @@ abstract class Utils extends Library {
 		$url = preg_replace('~[^\\pL0-9_]+~u', '-', $url); 
 		$url = trim($url, "-");
  		# TRANSLIT does the whole job
+		setlocale(LC_CTYPE, 'en_US.utf8');
 		$url = iconv("utf-8", "us-ascii//TRANSLIT", $url);
 		$url = strtolower($url);
 		# keep only letters, numbers, '_' and separator
