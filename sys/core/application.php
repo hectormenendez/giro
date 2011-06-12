@@ -181,7 +181,7 @@ class Application extends Library {
 		 		eval($__v);
 		 	}
 	 	}
-	 	if (isset($__isview)){
+	 	if (isset($__isview) && class_exists('view',false)){
 		 	# now, we make available all the variabes in the global scope for the 
 		 	# view, and for the included css and js, by using a temp php that we'll
 		 	# include here and there.
@@ -192,7 +192,7 @@ class Application extends Library {
 		 	. "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
 		 	. "unset(\$__s,\$__k,\$__v);\n";
 		 	file_put_contents(TMP.UUID.'.'.APP_NAME, $__s);
-	 	} else {
+	 	} elseif (class_exists('view',false)) {
 	 		foreach (View::$__vars as $__k => $__v) $$__k = $__v;
 	 		unset($__s,$__k,$__v);
 	 	}
