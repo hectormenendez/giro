@@ -17,8 +17,8 @@ abstract class Instance extends Library {
 	**/
 	public function &__construct(&$object = false){
 		$name = $this->__parent_name();
-		if (!is_object($object))
-			error("An object must be provided as an instance of $name");
+		if (!is_object($object) && !is_resource($object))
+			error("An object or resource must be provided as an instance of $name");
 		$this->__object = &$object;
 		$this->__parent = new ReflectionClass($name);
 		return $this;
@@ -78,7 +78,16 @@ abstract class Instance extends Library {
 		$c = count($params);
 		for($i=0; $i<$c; $i++)
 			if (!isset($args[$i]) && strlen($name=$params[$i]->getName())>2 && substr($name,0,2) !='__')
-				$args[$i] = $params[$i]->getDefaultValue();
+				# http://php.net/manual/en/reflectionparameter.getdefaultvalue.php
+				# Note:
+				# Due to implementation details, it is not possible to get the default 
+				# value of built-in functions or methods of built-in classes. Trying to 
+				# do this will result a ReflectionException being thrown.
+				# 
+				# hence this:
+				try {
+					$args[$i] = $params[$i]->getDefaultValue();	
+				} catch (Exception $e) { $args[$i] = null; }
 		# Appends object.
 		$args[] = $this->__object;
 		return $args;
