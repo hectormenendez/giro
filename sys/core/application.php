@@ -183,20 +183,20 @@ class Application extends Library {
 	 * Render View
 	 * Creates an encapsulated scope so the view and extenal files can share it.
 	 */
-	private static function render($_PATH = null, $_VAR = null){
+	public static function render($_PATH = null, $_VAR = null, $__view = null){
 		if (!$_PATH) $__isview = true;
 		if (!$_PATH && !$_PATH = self::path_find('.html')) return false;
-		if (self::$application->view){
-		 	# obtain all methods declared on the view set them on the global scope.
-		 	foreach (self::helpers(self::$application->view) as $__k => $__v){
+		# obtain all methods declared on the view set them on the global scope.
+		if ($__view = isset(self::$application->view)? self::$application->view : $__view){
+		 	foreach (self::helpers($__view) as $__k => $__v){
 		 		if (function_exists($__k)) error("Can't use '$__k' as view-function.");
 		 		eval($__v);
+		 		unset($__view);
 		 	}
 	 	}
+	 	# now, we make available all view variabes on rendered view's
+	 	# and included files' global scope, by using a temp php that we'll include.
 	 	if (isset($__isview) && class_exists('view',false)){
-		 	# now, we make available all the variabes in the global scope for the 
-		 	# view, and for the included css and js, by using a temp php that we'll
-		 	# include here and there.
 		 	$__isview = addslashes(serialize(View::$__vars));
 		 	$__s = ""
 		 	. '<'.'?'."php\n"
@@ -227,7 +227,7 @@ class Application extends Library {
 		return true;
 	}
 
-	private static function queue_run(){
+	public static function queue_run(){
 		if (!is_array(self::$queue)) return false;
 		foreach(array_reverse(self::$queue) as $m){
 			$method = array_shift($m);
