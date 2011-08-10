@@ -49,6 +49,13 @@ abstract class DB extends Library {
 		return $argv;
 	}
 
+	/**
+	 * Wrapper to retrieve last insertion id's KEY
+	 */
+	public static function lastid(){
+		$instance = func_get_arg(0);
+		return $instance->lastInsertId();
+	}
 
 	/**
 	 * SQL Query
