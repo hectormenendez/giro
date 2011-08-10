@@ -108,6 +108,18 @@ class Application extends Library {
 			$inst->view  = &$view;
 			$inst->model = &$model;
 		}
+		# if the user sends an action, check if a public method 
+		# named like that action exists and call it instead,
+		# otherwise call the usual method/construct.
+		if($inst instanceof Control && isset($args[0])){
+			$id = array_shift($args);
+			($id == $construct || !method_exists($inst, $id)) ||
+			($do = new ReflectionMethod($inst, $id)) && ($do = $do->isPublic());
+			if (!empty($do)){
+			 call_user_func_array(array($inst,$id), $args);
+			 return $inst;
+			} else array_unshift($args, $id);
+		}
 		# run pseudo constructor
 		if (method_exists($inst, $construct))
 			call_user_func_array(array($inst, $construct), (array)$args);
