@@ -157,4 +157,4 @@ function _error($action = null, $msg = null){
 function error   ($m=''){ return call_user_func('_error', E_USER_ERROR,   $m);}
 function warning ($m=''){ return call_user_func('_error', E_USER_WARNING, $m);}
 function notice  ($m=''){ return call_user_func('_error', E_USER_NOTICE,  $m);}
-function stop	 (     ){ exit(0);                                            }
+function stop	 ($m=null) { if($m!==null) echo $m; exit(0); }
