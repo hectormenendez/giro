@@ -43,21 +43,18 @@ class Application extends Library {
 			$ctrl = $uri['ctrl'] == '__index__'? self::$default : $uri['ctrl'];
 			$args = $uri['args'];
 			unset($uri);
-		} else 
-			$ctrl = $external;
-		# all controllers starting with underscore are treated as private.
-		$error404 = ucfirst($ctrl)." does not exist.";
-		if ($ctrl[0] == '_') parent::error_404($error404);
+		} else $ctrl = $external;
+		# make sure the controller exists
 		if (!$path = self::path_find('', $ctrl)) {
-			if ($ctrl == self::$default)
-				parent::error_500('Default Application Missing');
-			parent::error_404($error404);
+			if ($ctrl == self::$default) parent::error_500('Default Application Missing');
+			parent::error_404(ucfirst($ctrl).' does not exist.');
 		}
 		# controller exists, define constants
 		define('APP_PATH', pathinfo($path, PATHINFO_DIRNAME).SLASH);
 		define('APP_NAME', $ctrl);
 		define('APP_URL', URL.APP_NAME.SLASH);
-		#|application
+		# application assamble:
+		# first model and view, then controller.
 		$null = null;
 		$name = $external? APP_NAME.'_external' : APP_NAME;
 		self::$application = self::assamble($args,
@@ -85,20 +82,19 @@ class Application extends Library {
 		# if an array is sent as first parameter assume controller.
 		# the path checking for it is already done in the loader.
 		$type = is_array($args)? 'control' : $args;
-		# determine if master MVCs are available
-		$masterpath = file_exists(APP."_$type".EXT)? APP."_$type".EXT : false;
-		$path = self::path_find($type != 'control'? $type : null);
-		if (!$path && !$masterpath) return $false;
-		elseif (!$path && $masterpath){
-			$inst = $type;
-			include $masterpath;
-		} else { 
-			$inst = APP_NAME.ucfirst($type);
-			# if no master MVC found create a dummy, otherwise, just include it.
-			if (!$masterpath) eval("class $type extends application_$type {}");
-			else include $masterpath;
-			include $path;
-		}
+		# determine if a normal model or a view exists
+		$normal = self::path_find($type != 'control'? $type : null);
+		# determine if a common MVCs is available. ie: _model.php _view.php.
+		$common = file_exists(APP."_$type".EXT)? APP."_$type".EXT : false;
+		# the instance name will be the type unless a model or view exists
+		# in wich case we'll include.
+		$inst = $normal? APP_NAME.ucfirst($type) : $type;
+		# use the common as intermediarie for the parent class
+		# or if inexistent, create one on the fly
+		if (($common && $normal) || ($common && !$normal)) include $common;
+		else eval("class $type extends application_$type {}");
+		if ($normal) include $normal;
+		# now make sure the instance is correctly declared, and if it is instance it.
 		if (!class_exists($inst, false)) error('Invalid '.ucfirst($type).' Declaration.');
 		$inst = new $inst($args);
 		# Views don't need constructors.
@@ -107,18 +103,18 @@ class Application extends Library {
 		if ($type == 'control'){
 			$inst->view  = &$view;
 			$inst->model = &$model;
-		}
-		# if the user sends an action, check if a public method 
-		# named like that action exists and call it instead,
-		# otherwise call the usual method/construct.
-		if($inst instanceof Control && isset($args[0])){
-			$id = array_shift($args);
-			($id == $construct || !method_exists($inst, $id)) ||
-			($do = new ReflectionMethod($inst, $id)) && ($do = $do->isPublic());
-			if (!empty($do)){
-			 call_user_func_array(array($inst,$id), $args);
-			 return $inst;
-			} else array_unshift($args, $id);
+			# if the user sends an action, check if a public method 
+			# named like that action exists and call it instead,
+			# otherwise, call the usual method/construct.
+			if($inst instanceof Control && isset($args[0])){
+				$id = array_shift($args);
+				($id == $construct || !method_exists($inst, $id)) ||
+				($do = new ReflectionMethod($inst, $id)) && ($do = $do->isPublic());
+				if (!empty($do)){
+				 call_user_func_array(array($inst,$id), $args);
+				 return $inst;
+				} else array_unshift($args, $id);
+			}
 		}
 		# run pseudo constructor
 		if (method_exists($inst, $construct))
@@ -287,7 +283,7 @@ class Application extends Library {
 			$uri = explode("/", $uri);
 			array_shift($uri);
 			$ctrl = array_shift($uri);
-			# clean empty strings. #### WARNING: QUICKFIX ###			foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
+			# clean empty strings. #### WARNING: QUICKFIX ### foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
 			$uri = array('ctrl'=>$ctrl, 'args'=>$uri);
 		}
 		# uri is empty, trigger default controller.
