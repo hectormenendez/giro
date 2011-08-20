@@ -1,128 +1,215 @@
 <?php
-/**
- * Database Manager
- * This is the most basic attempt to make a database manager, it's more like a 
- * wrapper really.
- *
- * @version r2 [2011|APR|14]
- *
- * @todo do some sort of active record to speed up database development.
- *		 look at master, for reference. [did some worke there].
- * @todo These three methods should reside on Core, after all they're very basic.
- */
-abstract class DB extends Library {
+class DB extends Library {
+
+	public $instance = null;
+	public $driver   = null;
+
+	private $lastSQL;
+	private $lastEXE;
+	private $statement = array();
+	private $queries   = array();
 
 	/**
-	 * Database Loader
+	 * MYSQL Driver static construct
+	 *
+	 * @see DB->construct_mysql();
+	 */
+	public static function mysql($db=false, $password='', $user='root', $host='localhost', $port='3307'){
+		return new DB('mysql', $db, $password, $user, $host, $port);
+	}
+
+	/**
+	 * MYSQL Loader
+	 * Returns a valid instance of a mysql database.
+	 * 
+	 * @param [string] $db       Existing database name.
+	 * @param [string] $password Valid Database password         [defaults to empty]
+	 * @param [string] $user     Valid Database user             [defaults to root]
+	 * @param [string] $host     Valid Hostname for database     [defaults to localhost]
+	 * @param [string] $port     Valid Port number fort database [defaults to 3307]
+	 */
+	private function &construct_mysql(){
+		if (
+			func_num_args() != 5 || 
+			!@list($db,$password,$user,$host,$port) = func_get_args()
+		)	error('Invalid mysql arguments');
+		if (!is_string($db)) error('A database name must be provided');
+		try {
+			$this->instance = new PDO(
+				'mysql:host='.(string)$host.';port='.(string)$port.';dbname='.$db,
+				(string)$user,
+				(string)$password,
+				array(
+					PDO::ATTR_PERSISTENT         => false,
+					PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
+				)
+			);
+			$this->instance->exec('SET CHARACTER SET utf8');
+			# show errors on erroneous queries.
+			$this->instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		}
+		catch (PDOException $e) { $this->error($e); }
+		$this->driver = 'mysql';
+		return $this;
+	}
+
+	/**
+	 * SQLITE Driver static construct 
+	 */
+	public static function sqlite($path=false){
+		return new DB('sqlite',$path);
+	}
+
+	/**
+	 * SQLITE Loader
 	 * Returns a valid instance of a database, if nothing specified, use memmory
 	 *
 	 * @param [string] $path The Database path.
-	 * @param [object] $instance Added automatically by the Instance class.
-	 *
-	 * @return [object:reference] pseudo Reflection class of this Class.
 	 */
-	public static function &load($path = false, $instance = null){
-		# just in case someone is fool enough to cause recursion.
-		if ($instance) return $instance;
+	private function &construct_sqlite(){
+		if (func_num_args() != 1 || !@list($path) = func_get_args())
+			error('Invalid mysql arguments');
 		# If not a valid path specified, generate one for the app.
 		# this should issue a warning of some sort.
 		if (!$path || stripos($path, 'memory') === false && !file_exists($path))
 			$path = TMP.strtolower(APP_NAME).'.db';
 		# right now only the sqlite driver will be available.		
 		try { 
-			$dbo = new PDO('sqlite:'.$path);
-			$dbo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-		} catch (PDOException $e){ 
-			error('Unable to load the Database.');
-		}
-		# wrap the database manager in our reflection instance and return it.
-		$instance = new dbInstance($dbo);
-		return $instance;
+			$this->instance = new PDO('sqlite:'.$path);
+			$this->instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		} 
+		catch (PDOException $e) { $this->error($e); }
+		$this->driver = 'sqlite';
+		return $this;
 	}
 
 	/**
-	 * Return a reference to the original PDO instance, hardcore baby!
+	 * Internal instance constructor.
+	 *
+	 * redirects the original static call to an driver-specific cosntructor.
 	 */
-	public static function &PDO(){
-		$argv =func_get_arg(0);
-		return $argv;
+	public function &__construct(){
+		# a rudimentaty-yet-effective way of making sure the class 
+		# won't be constructed from outside.
+		$bt = debug_backtrace();
+		if ($bt[0]['file']!==__FILE__) error(__CLASS__.' cannot be instanced.');
+		$args = func_get_args();
+		$type = (string)array_shift($args);
+		if (!is_callable(array($this,'construct_'.$type)))
+			error(ucwords($type).' is not a valid Database driver.');
+		$instance = call_user_func_array(array($this,'construct_'.$type), $args);
+		return $instance;
 	}
 
 	/**
 	 * Wrapper to retrieve last insertion id's KEY
 	 */
-	public static function lastid(){
-		$instance = func_get_arg(0);
-		return $instance->lastInsertId();
+	public function lastid(){
+		return $this->instance->lastInsertId();
 	}
 
 	/**
-	 * SQL Query
-	 * Plain and simple, make a query return results. 
+	 * Execute statement in database
 	 *
-	 * @param	[string] 			$sql	SQL to query.
-	 * @param	[mixed:infinite]	$rep	Replacements to be used a la printf.
-	 *
-	 * @return	[array]	Array of results.
+	 * @see $this->prepare();
 	 */
-	public static function query($sql = ''){
-		$args = func_get_args();
-		list($sql, $instance) = self::arguments($args);
-		try {
-			$qry = null;
-			$qry = $instance->query($sql);
-		}
-		catch( PDOException $e ){ return self::error($e); }
-		return ($qry)? $qry->fetchAll(PDO::FETCH_ASSOC) : false;
+	public function exec(){
+		if (!$exed = call_user_func_array(array($this,'prepare'), func_get_args())) return 0;
+		return $this->lastEXE;
 	}
 
 
 	/**
-	 * SQL Execute
-	 * As the name implies, executes as SQL statement and returns the number of
-	 * affected rows.
+	 * Make queries to Database
 	 *
-	 * @param	[string]	SQL to execute. you cannot execute SELECT commands,
-	 *						it would generate an error.
-	 *
-	 * @return [int] The number of affected queries.
+	 * @see $this->prepare();
 	 */
-	public static function exec($sql = ''){
-		$args = func_get_args();
-		list($sql, $instance) = self::arguments($args);	
-		try {
-			if (stripos($sql,'select') !== false)
-				throw new PDOException('SELECT connot be used in exec context.');
-			$exec = $instance->exec($sql);
-		}
-		catch( PDOException $e ){ return self::error($e); }
-		
-		return (int) $exec;
+	public function &query(){
+		$array = array();
+		if (!$exed = call_user_func_array(array($this,'prepare'), func_get_args())) return $array;
+		# if we have that query on cache return it.
+		if (isset($this->queries[$this->lastSQL]) && is_object($this->queries[$this->lastSQL]))
+			return $this->queries[$this->lastSQL];
+		$this->queries[$this->lastSQL] = $exed->fetchAll(PDO::FETCH_ASSOC);
+		return $this->queries[$this->lastSQL];
 	}
 
-
-################################################################ INTERNALS #####
-
 	/**
-	 * Arguments Parser
-	 * Checks for DB instance and format/escapes SQL.
+	 * Preparing statements.
+	 *
+	 * Provide a common interface for prepared statements for query and exec
+	 *
+	 * @param [string] $sql       The SQL to execute. 
+	 *                            It accepts named and unnamed prepared statements.
+	 *                            ie: 'SELECT * FROM table WHERE id=?'
+	 *                            or: 'SELECT * FROM table WHERE id=:id'
+	 *
+	 * @param [mixed]  $Narg      The replacement values for the prepared statement.
+	 *                            ie: (string)'1' OR (int)1
+	 *                            or in case of named statement: array(':id'=>'1')
+	 *
+	 * @return [object reference] The prepared and queried object.
 	 */
-	private static function arguments(&$args){
-		$sql = array_shift($args);
-		$ins = array_pop($args);
+	private function &prepare(){
+		if (($num = func_num_args())<1) error('Invalid number of arguments');
+		$arg = func_get_args();
+		$sql = array_shift($arg);
 		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
-		if (!$ins instanceof PDO) error('Missing DB instance.');
-		# format and sanitize sql using remaining args
-		# but first check if the user is actually sending the correct number of them..
-		$args = (array)$args; # just in case.
-		$count = count($args);
-		# oh my, I'm proud of this regex.
-		$regex = preg_match_all('/(?<!%)%(?!%+)(?:(?:\d+\$)?[bcdeEufFgGosxX])?/', $sql, $match);
-		if ($count !== $regex) error("Expecting $regex arguements, got $count. [".@implode(', ',$match[0]).']');
-		foreach((array)$args as $k=>$v) $args[$k] = $ins->quote($v);
-		$sql = vsprintf($sql, $args);
-		return array(&$sql, &$ins);
+		try {
+			# if there's already a cached version of this preparation, return it.
+			if (!isset($this->statement[$sql]) || !is_object($this->statement[$sql]))
+				$this->statement[$sql] = $this->instance->prepare($sql);
+			if ($num > 1 && (isset($arg[0]) && is_array($arg[0])) && $num > 2)
+				error('Only one argument required when using an array for replacement statements.');
+			elseif (isset($arg[0]) && is_array($arg[0])) $arg = $arg[0];
+			$this->lastEXE = $this->statement[$sql]->execute($arg);			
+		}
+		catch (PDOException $e) { $this->error($e); }
+		$this->lastSQL = $sql;
+		return $this->statement[$sql];
+	}
+
+	/**
+	 * Export SQL Structure and Data.
+	 *
+	 * @param [mixed] $path Save output to path or returns it.
+	 *
+	 * @note only works for mysql driver.
+	 * @todo add support for sqlite.
+	 */
+	public function export($path=false){
+		if ($this->driver != 'mysql')
+			error('Support for exporting databases other than mysql is not implemented yet.');
+		function col($a){ return current($a); }
+		function row($s){ return addslashes((string)$s); }
+		$backup = '';
+		# Table structure
+		foreach( $this->query('SHOW TABLES') as $table){
+			$table = current($table);
+			foreach ($this->query('SHOW CREATE TABLE '.$table) as $sql)
+				$backup .= "DROP TABLE IF EXISTS `$table`;\n".next($sql).";\n\n";
+			$rows = '';
+			foreach($this->query("SELECT * FROM $table") as $row)
+				$rows.="\n".'("'.implode('","', array_map('row', $row)).'"),';
+			# continue only if data found
+			if (!$rows) continue;
+			# join column names into a string
+			$cols = '(`'.implode('`,`', array_map('col',$this->query("SHOW COLUMNS FROM $table"))).'`)';
+			$backup .= "INSERT INTO `$table` $cols VALUES ".substr($rows, 0,-1).";\n\n";
+		}
+		if (!is_string($path)) return $backup;
+		return file_put_contents($path, $backup);
+	}
+
+	/**
+	 * Import external SQL
+	 * It only wraps a file_get_contents call.
+	 */
+	public function import($path=false){
+		if (!is_string($path) || !file_exists($path))
+			error('Could not import, missing file.');
+		$sql = file_get_contents($path);
+		return $this->exec($sql);
 	}
 
 	/**
@@ -135,5 +222,3 @@ abstract class DB extends Library {
 	}
 
 }
-
-class dbInstance extends Instance {}
