@@ -71,8 +71,7 @@ class DB extends Library {
 			error('Invalid mysql arguments');
 		# If not a valid path specified, generate one for the app.
 		# this should issue a warning of some sort.
-		if (!$path || stripos($path, 'memory') === false && !file_exists($path))
-			$path = TMP.strtolower(APP_NAME).'.db';
+		if (!is_string($path)) $path = TMP.strtolower(UUID).'.db';
 		# right now only the sqlite driver will be available.		
 		try { 
 			$this->instance = new PDO('sqlite:'.$path);
@@ -209,7 +208,8 @@ class DB extends Library {
 		if (!is_string($path) || !file_exists($path))
 			error('Could not import, missing file.');
 		$sql = file_get_contents($path);
-		return $this->exec($sql);
+		# no preparation needed, execute directly from instance.
+		return $this->instance->exec($sql);
 	}
 
 	/**

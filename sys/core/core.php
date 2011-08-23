@@ -3,13 +3,17 @@
  * Framework Core
  * The mothership, The Red Leader, The master of disaster.
  *
- * @version	v2.0R3	[2011|MAR|28]	Based upon previous and undocumented Framework.
- * @author	Héctor Menéndez [h@cun.mx]
+ * @version	v2.1 Palmera Branch	[2011|AUG|21]
+ * @author	Héctor Menéndez     [h@cun.mx]
  *
- * @log [2011|MAR|28]	Forked from GIRO 
- * @log [2011|APR|01] 	Implemented Basic URI & Routing handling 
- * @log [2011|APR|14]	Changed application for application to avoid conflicts 
- *						between the newly created method in Librarytodo
+ * @log [2011|MAR|28]	- Forked from GIRO 
+ * @log [2011|APR|01] 	- Implemented Basic URI & Routing handling 
+ * @log [2011|APR|14]	- Changed application for application to avoid conflicts 
+ *						  between the newly created method in Librarytodo
+ * @log [2011|AUG|21]	- Moved header and file from Library, since thos weren't 
+ *                        really necesary all over the framewrork.
+ *                      - Added basic database support via sqlite and the newly
+ *                        added-to-core Database library.
  *
  * @todo	Make sure the uri always ends with a slash.
  * @todo	find a way that every todo appears automagically in a file.
@@ -19,19 +23,35 @@
  */
 abstract class Core extends Library {
 
-	private static $config = array();
-	private static $library = array('core');
+	private static $library     = array('core');
+	private static $config      = array();
 	private static $application = array();
+	private static $queue       = array();
+	private static $file        = array();
+	private static $DB          = null;
 
 	public static function _construct(){
 		self::$config = self::config_get();
 		spl_autoload_register('self::library');
 		self::uri_parse();
-		if (strpos(URI, PUB_URL)!==false) Application::external();
-		else Application::load();
+		Application::load();
 	}
 
 ######################################################################### PUBLIC
+
+	/**
+	 * Framework TMP data management with simple sqlite DB [beta]
+	 */
+	public static function &db(){
+		if (!self::$DB){
+			if (!file_exists(CORE.'db.sql'))
+				error('Core Database template is missing.');
+			self::$DB = DB::sqlite(DB);
+			self::$DB->import(CORE.'db.sql');
+			return self::$DB;
+		}
+		return self::$DB;
+	}
 
 	/**
 	 * Configuration Getter
@@ -92,18 +112,114 @@ abstract class Core extends Library {
 		foreach (array_reverse(self::$library) as $l){
 			if (method_exists($l,'_destruct')) call_user_func("$l::_destruct");
 		}
+	}	
+
+	private static $language = null;
+
+	/**
+	 * Language Management
+	 * Set, get and Search the language configuration [by language key]
+	 * ie: es-mx or es
+	 */
+	public static function language($get=false, $set=false){
+		$lang = self::config('language');
+		# if no current language is defined, do it now.
+		if (!self::$language){
+			self::$language = array_keys($lang);
+			self::$language = array_shift(self::$language);
+		}
+		# if nothing specified return the current language
+		if (!$get && !$set) {
+			$lang[self::$language]['key'] = self::$language;
+			return $lang[self::$language];
+		}
+		# set value
+		if ($set){
+			if (
+				!is_string($get) || strlen($get)!=5         || # key must be xx-xx
+				!is_array($set)                             ||
+				count($set) != 3                            ||
+				array_keys($set) !== range(0,2)             || # array is not associative
+				!($set = explode('|', implode('|',$set)))   || # convert all values to string
+				strlen($set[0])!=2
+			) error('Invalid language format');
+			$conf = &self::config_get();
+			self::$language = $get;
+			$conf['core']['language'][$get] = $set;
+			$set['key'] = $get;
+			return $set;
+		}
+		$get = (string)$get;
+		$len = strlen($get);
+		# first check for the natural key-name
+		if ($len == 5 && isset($lang[$get])) {
+			self::$language = $get;
+			$lang[$get]['key'] = $get;
+			return $lang[$get];
+		}
+		# next, check for the second common key, return first match
+		elseif ($len == 2) foreach($lang as $key=>$lan) if ($lan[0] == $get) {
+			self::$language = $lan['key'] = $key;
+			return $lan;
+		}
+		# bye bye
+		return false;
 	}
 
 	/**
-	 * URI Parser
-	 * Extracts information from the URI and explodes it to pieces so it can be
-	 * better understood by the framework.
+	 * Removes all headers sent up to this point.
 	 */
-	private static function uri_parse($key='REQUEST_URI'){
-		if (!isset($_SERVER[$key]) || $_SERVER[$key]=='')
-			error('The URI is unavailable [crap].');
-		# catch calls to pub dir, and parse them differently.
-		define('URI', str_replace(BASE,'',$_SERVER[$key]));
+	public static function headers_remove(){
+		foreach(headers_list() as $h)
+			header_remove(substr($h, 0, strpos($h, ':')));
+	}
+
+	/**
+	 * Header Shorthand
+	 */
+	public static function header($code = null){
+		if (headers_sent()) return false;
+		if (is_int($code)){
+			switch((int)$code):
+			case 200: $head = 'HTTP/1.1 200 OK';							break;
+			case 304: $head = 'HTTP/1.0 304 Not Modified';					break;
+			case 400: $head = 'HTTP/1.0 400 Bad request'; 					break;
+			case 401: $head = 'HTTP/1.0 401 Authorization required';		break;
+			case 402: $head = 'HTTP/1.0 402 Payment required'; 				break;
+			case 403: $head = 'HTTP/1.0 403 Forbidden'; 					break;
+			case 404: $head = 'HTTP/1.0 404 Not found';						break;
+			case 405: $head = 'HTTP/1.0 405 Method not allowed';			break;
+			case 406: $head = 'HTTP/1.0 406 Not acceptable';				break;
+			case 407: $head = 'HTTP/1.0 407 Proxy authentication required'; break;
+			case 408: $head = 'HTTP/1.0 408 Request timeout';				break;
+			case 409: $head = 'HTTP/1.0 409 Conflict';						break;
+			case 410: $head = 'HTTP/1.0 410 Gone';							break;
+			case 411: $head = 'HTTP/1.0 411 Length required';				break;
+			case 412: $head = 'HTTP/1.0 412 Precondition failed';			break;
+			case 413: $head = 'HTTP/1.0 413 Request entity too large';		break;
+			case 414: $head = 'HTTP/1.0 414 Request URI too large';			break;
+			case 415: $head = 'HTTP/1.0 415 Unsupported media type';		break;
+			case 416: $head = 'HTTP/1.0 416 Request range not satisfiable'; break;
+			case 417: $head = 'HTTP/1.0 417 Expectation failed';			break;
+			case 422: $head = 'HTTP/1.0 422 Unprocessable entity';			break;
+			case 423: $head = 'HTTP/1.0 423 Locked';						break;
+			case 424: $head = 'HTTP/1.0 424 Failed dependency';				break;
+			case 500: $head = 'HTTP/1.0 500 Internal server error';			break;
+			case 501: $head = 'HTTP/1.0 501 Not Implemented';				break;
+			case 502: $head = 'HTTP/1.0 502 Bad gateway';					break;
+			case 503: $head = 'HTTP/1.0 503 Service unavailable';			break;
+			case 504: $head = 'HTTP/1.0 504 Gateway timeout';				break;
+			case 505: $head = 'HTTP/1.0 505 HTTP version not supported';	break;
+			case 506: $head = 'HTTP/1.0 506 Variant also negotiates';		break;
+			case 507: $head = 'HTTP/1.0 507 Insufficient storage';			break;
+			case 510: $head = 'HTTP/1.0 510 Not extended';					break;
+			default: return false;
+			endswitch;
+		}
+		elseif(is_string($code)) return false; # add more header shortcuts here
+		else return false;
+		header($head);
+		return true;
 	}
 	
 	/**
@@ -154,7 +270,7 @@ abstract class Core extends Library {
 		#print_r($trace); die;
 		foreach($trace as $t){
 			if (!isset($t['file']) || !isset($t['line'])) continue;
-			$line = parent::file($t['file']);
+			$line = self::file($t['file']);
 			$lnum = $t['line']-1;
 			$line = trim($line[$lnum]);
 			if (!preg_match('/\w+/', $line)) continue;
@@ -165,9 +281,33 @@ abstract class Core extends Library {
 		return self::error_exit($txt);
 	}
 
-	public static function error_exit($type){
+	private static function error_exit($type){
 		if (stripos($type, 'notice') === false ) exit(2);
 		return true;
+	}
+
+
+	/**
+	 * Simple File Cacher
+	 * Stores files in a static var so they can be constantly accessed.
+	 *
+	 * @param [string $path	  The file path, it will be used to identify the file.
+	 * @param [bool]  $array  Array or plain file?
+	 * @param [int]   $flags  FILE_IGNORE_NEW_LINES, FILE_SKIP_EMPTY_LINES
+	 *
+	 * @return	[mixed]	
+	 */
+	public  static function file($path=null, $array=true, $flags=0){
+		if ($path === null) return self::$file;
+		if (!file_exists($path)) return false;
+		$key = $path;
+		$mode = $array? 'array' : 'string';
+		if (isset(self::$file[$key][$mode])) return self::$file[$key][$mode];
+		if (!isset(self::$file[$key])) self::$file[$key] = array();
+		self::$file[$key][$mode] = $array?
+			file($path, $flags) : 
+			file_get_contents($path);
+		return self::$file[$key][$mode];
 	}
 
 	/**
@@ -184,5 +324,64 @@ abstract class Core extends Library {
 		return $type[$ext];
 	}
 
+	/**
+	 * Add Method to Queue
+	 */
+	public static function queue($fn=false){
+		$method = func_get_args();
+		if (empty($method)) return false;
+		array_push(self::$queue, $method);
+		return true;
+	}
+
+	/**
+	 * Process queue
+	 */
+	public static function queue_run(){
+		if (!is_array(self::$queue)) return false;
+		foreach(array_reverse(self::$queue) as $m){
+			$method = array_shift($m);
+			if (is_callable($method)) call_user_func_array($method, $m);
+		}
+	}
+
+	/**
+	 * No Comments
+	 * Strip comments from given source code.
+	 *
+	 * @note an T_OPEN_TAG is added by default so the tokenizer works.
+	 */
+	public static function nocomments($str, $addopentag=true){
+		$comment = array(T_COMMENT, T_DOC_COMMENT);
+		$foundopentag = false;
+		if ($addopentag) $str = '<'.'?'.$str;
+		$tokens = token_get_all($str);
+		$source = '';
+		foreach($tokens as $token){
+			if (is_array($token)){
+				# if we added an open tag, ignore it.
+				if ($addopentag && !$foundopentag && $token[0] === T_OPEN_TAG){
+					$foundopentag = true;
+					continue;
+				}
+				if (in_array($token[0], $comment)) continue;
+				$token = $token[1];
+			}
+			$source .= $token;
+		}
+		return $source;
+	}
+
+	/**
+	 * URI Parser
+	 * Extracts information from the URI and explodes it to pieces so it can be
+	 * better understood by the framework.
+	 */
+	private static function uri_parse($key='REQUEST_URI'){
+		if (!isset($_SERVER[$key]) || $_SERVER[$key]=='')
+			error('The URI is unavailable [crap].');
+		# catch calls to pub dir, and parse them differently.
+		define('URI', str_replace(BASE,'',$_SERVER[$key]));
+	}
 
 }

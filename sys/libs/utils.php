@@ -117,4 +117,15 @@ abstract class Utils extends Library {
 		return $$action($str, $key);
 	}
 
+	/**
+	 * Destroys application temp data after a timeout.
+	 * I'm not using this anymore, but something tells me I might someday.
+	 * it isn't blockie... so i like the shell command.
+	 */
+	private static function destroy_linux_temp_data(){
+		if (!defined('APP_NAME')) return false;
+		if (!is_int($time = self::config('clean_timeout'))) $time = 10;
+		shell_exec("nohup php -r \"sleep(".$time."); @unlink('".TMP.UUID.'.'.APP_NAME."');\" > /dev/null & echo $!");
+	}
+
 }

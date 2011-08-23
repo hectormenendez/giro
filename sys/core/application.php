@@ -1,51 +1,37 @@
 <?php
 
-include CORE.'application_control'.EXT;
-include CORE.'application_model'.EXT;
-include CORE.'application_view'.EXT;
+#include CORE.'application_control'.EXT;
+#include CORE.'application_model'.EXT;
+#include CORE.'application_view'.EXT;
 
 class Application extends Library {
 
-	private static $default = null;
-	private static $application = null;
-	private static $queue = array();
-	private static $routes = null;
+	private static $default       = null;
+	private static $routes        = null;
+	private static $application   = null;
+	private static $view;
 
 	public static function _construct(){
+		
 		if (!is_array(self::$routes = self::config('routes')))
-			error('Missing Routing Configuration.');
-	}
-
-	/**
-	 * Destroys application temp data after a timeout.
-	 */
-	public static function _destruct(){
-		if (!defined('APP_NAME')) return false;
-		if (!$time = self::config('clean_timeout')) $time = 10;
-		shell_exec("nohup php -r \"sleep(".$time."); @unlink('".TMP.UUID.'.'.APP_NAME."');\" > /dev/null & echo $!");
+			error('Bad Routing Configuration.');
+		if (!is_string(self::$default = self::config('default')))
+			error('Bad Default App Configuration.');
 	}
 
 	/**
 	 * Application Loader
 	 * Checks if an application and its dependant model exists for a given URI,
 	 * if so, loads the Controller & Model Classes so they handle the hussle.
-	 *
-	 * @param [array] $uri Internal array containing the ruting info.
-	 *
-	 * @return [mixed][reference] Application controlller.
 	 */
-	public static function load($external=null, $args=null){
-		if (!$external){
-			if (!defined('URI')) error('The URI has not been parsed yet.');
-			if (!self::$default = self::config('default'))
-				error('Default APP set incorrectly');
-			$uri = self::identify();
-			$ctrl = $uri['ctrl'] == '__index__'? self::$default : $uri['ctrl'];
-			$args = $uri['args'];
-			unset($uri);
-		} else $ctrl = $external;
+	public static function load(){
+		if (!defined('URI')) error('The URI has not been parsed yet.');
+		# detect if an external file is being requested.
+		if (strpos(URI, PUB_URL)!==false) return new Application_External();
+		# $ctrl & $args come from here.
+		foreach(self::identify() as $k=>$v) $$k=$v;
 		# make sure the controller exists
-		if (!$path = self::path_find('', $ctrl)) {
+		if (!$path = self::path('', $ctrl)) {
 			if ($ctrl == self::$default) parent::error_500('Default Application Missing');
 			parent::error_404(ucfirst($ctrl).' does not exist.');
 		}
@@ -56,34 +42,39 @@ class Application extends Library {
 		# application assamble:
 		# first model and view, then controller.
 		$null = null;
-		$name = $external? APP_NAME.'_external' : APP_NAME;
 		self::$application = self::assamble($args,
-							 self::assamble('model', $null, $null, $name),
-							 self::assamble('view',  $null, $null, $name),
-							 $name);
-		if (!$external) self::unload();
+                             self::assamble('model', $null, $null),
+							 self::assamble('view',  $null, $null));
+		# render default view after load
+		# user can override this anytime.
+		self::$application->view->render();
 	}
 
 	/**
-	 * Application Destructor
-	 * This will run as soon as the controller ends its execution.
+	 * Application Path Finder
+	 * Attempt to load the controller.[files have priority over directories]
+	 * ie: APP/main.php  overrides APP/main/main.php
 	 */
-	private static function unload(){
-		self::render();
-		self::queue_run();
+	public static function path($type = '', $app = APP_NAME){
+		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
+		$false = false;
+		$found = file_exists($path = APP.$app.$type) ||
+				 file_exists($path = APP.$app.SLASH.$app.$type);		
+		if (!$found) return false;
+		return $path;
 	}
 
 	/**
 	 * Application Constructor
 	 * Instantiates the application and sets it up.
 	 */
-	private static function &assamble($args=null, &$model=null, &$view=null, $construct=null){
+	private static function &assamble($args=null, &$model=null, &$view=null){
 		$false = false;
 		# if an array is sent as first parameter assume controller.
 		# the path checking for it is already done in the loader.
 		$type = is_array($args)? 'control' : $args;
 		# determine if a normal model or a view exists
-		$normal = self::path_find($type != 'control'? $type : null);
+		$normal = self::path($type != 'control'? $type : null);
 		# determine if a common MVCs is available. ie: _model.php _view.php.
 		$common = file_exists(APP."_$type".EXT)? APP."_$type".EXT : false;
 		# the instance name will be the type unless a model or view exists
@@ -96,154 +87,35 @@ class Application extends Library {
 		if ($normal) include $normal;
 		# now make sure the instance is correctly declared, and if it is instance it.
 		if (!class_exists($inst, false)) error('Invalid '.ucfirst($type).' Declaration.');
+		# instantiate the class and send uri parts to constructor.
 		$inst = new $inst($args);
 		# Views don't need constructors.
-		if ($type == 'view') return $inst;
+		if ($inst instanceof View) return $inst;
 		# fill out controller.
-		if ($type == 'control'){
+		if ($inst instanceof Control){
 			$inst->view  = &$view;
 			$inst->model = &$model;
-			# if the user sends an action, check if a public method 
-			# named like that action exists and call it instead,
-			# otherwise, call the usual method/construct.
-			if($inst instanceof Control && isset($args[0])){
+			# if the user sends an action, check if a public method named like 
+			# that action exists and call it instead, otherwise, call the usual.
+			if(isset($args[0])){
 				$id = array_shift($args);
-				($id == $construct || !method_exists($inst, $id)) ||
+				# this is hacky, but short & easy to understand.
+				($id == APP_NAME || !method_exists($inst, $id)) ||
 				($do = new ReflectionMethod($inst, $id)) && ($do = $do->isPublic());
 				if (!empty($do)){
-				 call_user_func_array(array($inst,$id), $args);
-				 return $inst;
-				} else array_unshift($args, $id);
+					call_user_func_array(array($inst,$id), $args);
+					return $inst;
+				}
+				else array_unshift($args, $id);
 			}
 		}
 		# run pseudo constructor
-		if (method_exists($inst, $construct))
-			call_user_func_array(array($inst, $construct), (array)$args);
+		if (method_exists($inst, APP_NAME))
+			call_user_func_array(array($inst, APP_NAME), (array)$args);
 		return $inst;
 	}
 
-	/**
-	 * External file identifier
-	 * Catches request to pub folder, check if the user is tryng to load a 
-	 * dynamic file from the framework.
-	 *
-	 * @log 2011/MAY/06 QuickFix: GET request were being considered part of the
-	 *					file thus sending 404s. When dealing with cache 
-	 *					[client side], using GET forces reload, so this was
-	 *					most important to fix.
-	 * @todo cache management
-	 */
-	public static function external(){
-		$file = str_replace(PUB_URL, PUB, URI);
-		# separate any existing GET request variable, we'll ignore it anyways.
-		$get = explode('?', $file);
-		$file = $get[0];
-		$get = isset($get[1])? $get[1] : '';
-		# if the requested file exists on the server, serve it, but only if it's
-		# not a text/plain. [unknown]
-		if (file_exists($file)){
-			$mime = Core::file_type($file);
-			$time = gmdate('D, d M Y H:i:s', filemtime($file));
-			#$cache = str_replace(PUB, TMP, $file).'.cache';
-			# look for a cached version of the file.
-			if ($mime == 'text/plain')	parent::warning_403('403 forbidden');
-			$file = file_get_contents($file);
- 			header("Last-Modified: $time GMT", true);
-			header("Content-Type: $mime");
-			echo $file;
-			stop();
-		}
-		# the user is requesting an unexistent file, check if the server refers
-		# to an application dynamic css / js.
-		$msg = 'File Not Found.';
-		$uri = str_replace(PUB_URL, '', URI);
-		if (!$ext = pathinfo($uri, PATHINFO_EXTENSION)) parent::error_404($msg);
-		$var = explode('.', substr($uri, 0, strpos($uri,$ext)-1));
-		$dir = explode('/', array_shift($var));
-		$app = array_shift($dir);
-		$path = (empty($dir)? '' :'.'.implode('.',$dir)).'.'.$ext;
-		if (!self::path_find('',$app) || !$path = self::path_find($path,$app))
-			parent::error_404($msg);
-		$mime = Core::file_type($file);
-		if ($mime == 'plain/text') error_500('Internal Server Error');
-		self::load($app, $var);
-		#header("Last-Modified: ".gmdate('D, d M Y H:i:s',filemtime($path))." GMT", true);
-		header("Content-Type: $mime");
-		self::render($path, $var);
-		stop();
-	}
 
-
-
-	/**
-	 * Render View
-	 * Creates an encapsulated scope so the view and extenal files can share it.
-	 */
-	public static function render($_PATH = null, $_VAR = null, $__view = null){
-		if (!$_PATH) $__isview = true;
-		if (!$_PATH && !$_PATH = self::path_find('.html')) return false;
-		# obtain all methods declared on the view set them on the global scope.
-		if ($__view = isset(self::$application->view)? self::$application->view : $__view){
-		 	foreach (self::helpers($__view) as $__k => $__v){
-		 		if (function_exists($__k)) error("Can't use '$__k' as view-function.");
-		 		eval($__v);
-		 		unset($__view);
-		 	}
-	 	}
-	 	# now, we make available all view variabes on rendered view's
-	 	# and included files' global scope, by using a temp php that we'll include.
-	 	if (isset($__isview) && class_exists('view',false)){
-		 	$__isview = addslashes(serialize(View::$__vars));
-		 	$__s = ""
-		 	. '<'.'?'."php\n"
-		 	. "\$__s = unserialize(stripslashes(\"$__isview\"));\n"
-		 	. "foreach ( \$__s as \$__k => \$__v) \$__s .= \$\$__k = \$__v;\n"
-		 	. "unset(\$__s,\$__k,\$__v);\n";
-		 	file_put_contents(TMP.UUID.'.'.APP_NAME, $__s);
-	 	} elseif (class_exists('view',false)) {
-	 		foreach (View::$__vars as $__k => $__v) $$__k = $__v;
-	 		unset($__s,$__k,$__v);
-	 	}
-	 	# if there's a scope available load it.
-	 	if (file_exists(TMP.UUID.'.'.APP_NAME)) include TMP.UUID.'.'.APP_NAME;
-		parent::header(200);
-		header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-		header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
-	 	include $_PATH;
-	}
-
-	/**
-	 * Add Method to Queue
-	 */
-	public static function queue(){
-		$method = func_get_args();
-		if (!is_array(self::$queue)) self::$queue = array();
-		if (empty($method)) return false;
-		array_push(self::$queue, $method);
-		return true;
-	}
-
-	public static function queue_run(){
-		if (!is_array(self::$queue)) return false;
-		foreach(array_reverse(self::$queue) as $m){
-			$method = array_shift($m);
-			if (is_callable($method)) call_user_func_array($method, $m);
-		}
-	}
-
-	/**
-	 * Application Path Finder
-	 * Attempt to load the controller.[files have priority over directories]
-	 * ie: APP/main.php  overrides APP/main/main.php
-	 */
-	public static function path_find($type = '', $app = APP_NAME){
-		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
-		$false = false;
-		$found = file_exists($path = APP.$app.$type) ||
-				 file_exists($path = APP.$app.SLASH.$app.$type);		
-		if (!$found) return false;
-		return $path;
-	}
 
 	/**
 	 * Application Identifier
@@ -275,7 +147,7 @@ class Application extends Library {
 				if (!isset($v[1])) $v[1] = null;
 				$var[$v[0]] = $v[1];
 			}
-			$uri = array('ctrl'=>'__index__','args'=>$var);
+			$uri = array('ctrl'=>self::$default,'args'=>$var);
 		}
 		# uri contains slashes, then treat it as a mod_rewriteredirected request.
 		elseif ($uri!='/' && strpos($uri,'/')!==false){
@@ -287,40 +159,9 @@ class Application extends Library {
 			$uri = array('ctrl'=>$ctrl, 'args'=>$uri);
 		}
 		# uri is empty, trigger default controller.
-		else $uri = array('ctrl'=>'__index__', 'args'=>array());
+		else $uri = array('ctrl'=>self::$default, 'args'=>array());
 		return $uri;
 	}
 
-	/**
-	 * Method Getter
-	 * Retrieve method declarations on given class.
-	 */
-	private static function helpers($class){
-	 	$reflect = new ReflectionClass($class);
-	 	$methods = array();
-	 	# get only methods that are not defined here.
-	 	$m = array_diff(get_class_methods($class), get_class_methods(__CLASS__));
-	 	foreach ($m as $methodname){
-	 		$method = $reflect->getMethod($methodname);
-			$file = parent::file($method->getFileName());
-	 		if ($method->isPrivate() || $method->isProtected()) continue;
-	 		# ignore methods starting with underscore
-	 		if ($methodname[0] == '_') continue;
-	 		# obtain method's source [removing comments and double spacing]
-	 		$src = '';
-	 		for($i = $method->getStartLine()-1; $i < $method->getEndLine(); $i++)
-	 			$src .= $file[$i];
-	 		$src = trim(preg_replace('/\s+/',' ',parent::nocomments($src)));
-	 		if (empty($src)){
-	 			var_dump($method->getStartLine(), $method->getEndLine());
-	 		}
-	 		# remove visibility declarations
-	 		$rx = '/(\s*(?:final|abstract|static|public|private|protected)\s)/i';
-	 		$old = substr($src, 0, strpos($src, '{'));
-	 		$new = preg_replace($rx, '',$old);
-	 		$methods[$methodname] = str_replace($old, $new, $src);
-	 	}
-	 	return $methods;
-	 }
 
 }
