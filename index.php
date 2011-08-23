@@ -1,7 +1,10 @@
 <?php
+ini_set('zlib.output_compression', 0);
+
 # Benchmarking start
 define('MEM', memory_get_usage());
 define('BMK', microtime(true));
+
 
 # Get rid of Winshit and PHP < 5.3 users.
 if ( 5.3 > (float)substr(phpversion(),0,3) )
@@ -43,6 +46,7 @@ $_E['PUB']  = $_E['ROOT'].'pub'.SLASH;	#	Public
 $_E['TMP']  = $_E['ROOT'].'tmp'.SLASH;	#	Temporary Files
 $_E['CORE'] = $_E['SYS'].'core'.SLASH;	#	Core Lib
 $_E['LIBS'] = $_E['SYS'].'libs'.SLASH;	#	Libraries
+$_E['HTML'] = $_E['SYS'].'html'.SLASH;  #   HTML Templates
 
 foreach ($_E as $k=>$v){
 	if (!file_exists($v) && !is_dir($v)) error("$k path does not exist.");
@@ -63,15 +67,19 @@ define('PUB_URL', !$x? str_replace(ROOT, '/', PUB) : substr(PUB, $x));
 
 # Obtain the IP trying to overpass, proxies.
 if (!empty($_SERVER['HTTP_CLIENT_IP']))
-	$x = $_SERVER['HTTP_CLIENT_IP'];
+	 $x = $_SERVER['HTTP_CLIENT_IP'];
 elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
-	$x = $_SERVER['HTTP_X_FORWARDED_FOR'];
-else
-	$x = $_SERVER['REMOTE_ADDR'];
+	 $x = $_SERVER['HTTP_X_FORWARDED_FOR'];
+else $x = $_SERVER['REMOTE_ADDR'];
 define('IP',$x);
+
+# Identifier for this run. [just the UNIX time]
+define('ID', (int)str_replace('.', '', (string)BMK));
 
 # Append the user agent and a salt
 define('UUID',md5(IP.$_SERVER['HTTP_USER_AGENT'].'GiRo23'));
+# Define Core database location
+define('DB', TMP.'DB');
 
 unset($x, $k,$v,$ext,$_E);
 
@@ -139,6 +147,7 @@ function _error($action = null, $msg = null){
 	array_push($arg, $bt);
 	# Ok, we're all set, now, it's time to check if the actual error handling
 	# method exist. if so, send the friggin' error.
+	if (!defined('DIED')) define('DIED',1);
 	if (class_exists('Core',false) && method_exists('Core', 'error_show'))
 		call_user_func_array('Core::error_show', $arg);
 	# Or, fallback to  a simple error.
@@ -157,4 +166,19 @@ function _error($action = null, $msg = null){
 function error   ($m=''){ return call_user_func('_error', E_USER_ERROR,   $m);}
 function warning ($m=''){ return call_user_func('_error', E_USER_WARNING, $m);}
 function notice  ($m=''){ return call_user_func('_error', E_USER_NOTICE,  $m);}
-function stop	 ($m=null) { if($m!==null) echo $m; exit(0); }
+
+function stop	 ($var=null, $debug=false) {
+	# destructors need to be told that execution stopped, yeah, they're that dumb.
+	if (!defined('DIED')) define('DIED',1);
+	# strings and ints are always echoed unless denug specified
+	if ((is_int($var) || is_string($var)) && !$debug)
+		echo $var;
+	# anything else sent [except null] assume debug.
+	elseif ($debug || ($var !== null && !is_int($var) && !is_string($var))){
+		echo "<pre>\n";
+		var_dump($var);
+		echo '</pre>';
+	}
+	# stop execution
+	exit(0);
+}
