@@ -47,7 +47,7 @@ class Application extends Library {
 							 self::assamble('view',  $null, $null));
 		# render default view after load
 		# user can override this anytime.
-		self::$application->view->render();
+		if (isset(self::$application->view))self::$application->view->render();
 	}
 
 	/**
