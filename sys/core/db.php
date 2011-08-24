@@ -8,6 +8,26 @@ class DB extends Library {
 	private $lastEXE;
 	private $statement = array();
 	private $queries   = array();
+	private $name      = null;
+
+
+	/**
+	 * Internal instance constructor.
+	 *
+	 * redirects the original static call to an driver-specific cosntructor.
+	 */
+	public function &__construct(){
+		# a rudimentaty-yet-effective way of making sure the class 
+		# won't be constructed from outside.
+		$bt = debug_backtrace();
+		if ($bt[0]['file']!==__FILE__) error(__CLASS__.' cannot be instanced.');
+		$args = func_get_args();
+		$type = (string)array_shift($args);
+		if (!is_callable(array($this,'construct_'.$type)))
+			error(ucwords($type).' is not a valid Database driver.');
+		$instance = call_user_func_array(array($this,'construct_'.$type), $args);
+		return $instance;
+	}
 
 	/**
 	 * MYSQL Driver static construct
@@ -50,6 +70,7 @@ class DB extends Library {
 		}
 		catch (PDOException $e) { $this->error($e); }
 		$this->driver = 'mysql';
+		$this->name   = $db;
 		return $this;
 	}
 
@@ -82,23 +103,6 @@ class DB extends Library {
 		return $this;
 	}
 
-	/**
-	 * Internal instance constructor.
-	 *
-	 * redirects the original static call to an driver-specific cosntructor.
-	 */
-	public function &__construct(){
-		# a rudimentaty-yet-effective way of making sure the class 
-		# won't be constructed from outside.
-		$bt = debug_backtrace();
-		if ($bt[0]['file']!==__FILE__) error(__CLASS__.' cannot be instanced.');
-		$args = func_get_args();
-		$type = (string)array_shift($args);
-		if (!is_callable(array($this,'construct_'.$type)))
-			error(ucwords($type).' is not a valid Database driver.');
-		$instance = call_user_func_array(array($this,'construct_'.$type), $args);
-		return $instance;
-	}
 
 	/**
 	 * Wrapper to retrieve last insertion id's KEY
@@ -210,6 +214,28 @@ class DB extends Library {
 		$sql = file_get_contents($path);
 		# no preparation needed, execute directly from instance.
 		return $this->instance->exec($sql);
+	}
+
+	/**
+	 * Check if current database has any tables.
+	 */
+	public function is_empty(){
+		switch($this->driver){
+			# good ol' mysql
+			case 'mysql': $sql =
+              "SELECT count(*)
+                 FROM information_schema.tables
+                WHERE table_type = 'BASE TABLE' AND table_schema ='{$this->name}'";
+            break;
+            # sqlite is so easy it hurts-
+            case 'sqlite': $sql =
+              "SELECT count(*)
+                 FROM sqlite_master WHERE sqlite_master.type = 'table'";
+            break;
+            default: error('Operation not yet implemented');
+		}
+		if ((int)$this->instance->query($sql)->fetchColumn()===0) return true;
+		return false;
 	}
 
 	/**
