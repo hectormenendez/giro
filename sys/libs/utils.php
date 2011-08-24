@@ -21,6 +21,13 @@ abstract class Utils extends Library {
 	}
 
 	const palabras_no = '|a|e|y|o|u|si|tambien|tengo|tenia|tendre|tienes|tienen|tuve|tuviste|tuvieron|tendre|tendras|tendran|tenemos|tuvimos|tendremos|sido|dare|daras|daremos|dimos|di|diste|daras|daran|dieron|dan|das|estamos|estas|estoy|estan|estaremos|estuvimos|estuviste|estaran|estuvieron|estuve|di|dio|das|pido|pides|piden|pedimos|pediste|pedir|damos|dan|dimos|vas|voy|vamos|van|vayan|vayamos|ya|ha|he|has|han|hemos|heme|habra|habras|habran|habremos|no|un|unos|cuando|llego|llegas|llegan|llegamos|quiza|pasa|pasas|pasan|quizas|han|has|mejor|peor|siempre|nunca|igual|hemos|del|al|ni|asi|etc|solo|sabe|sabes|saben|mis|nuestros|tus|mas|menos|entre|por|soy|eres|somos|son|hoy|ayer|manana|porque|porques|pero|peros|es|fue|sera|seran|seras|seremos|ser|ante|bajo|cabe|como|con|contra|de|desde|durante|en|entre|excepto|hacia|hasta|mediante|para|por|pro|seg|sin|so|sobre|tras|versus|via|yo|mi|conmigo|tu|vos|usted|ti|contigo|el|ella|ello|si|consigo|nosotros|nosotras|ustedes|vosotros|vosotras|ellos|ellas|consigo|me|nos|te|os|lo|la|le|se|los|las|les|este|esta|esto|estos|estas|ese|esa|eso|esos|esas|aquel|aquella|aquello|aquellos|aquellas|mio|mia|mios|mias|tuyo|tuya|tuyos.tuyas|suyo|suya|suyos|suyas|nuestro|nuesta|nuestros|nuestras|vuestro|vuestra|vuestros|vuestras|que|quien|quienes|cual|cuales|cuanto|cuantos|cuanta|cuantas|uno|una|unos|unas|alguno|alguna|algunos|algunas|algo|ninguno|ninguna|ningunos|ningunas|nada|poco|poca|pocos|pocas|escaso|escasa|escasos|escasas|mucho|mucha|muchos|muchas|demasiado|demasiada|demasiados|demasiadas|todo|toda|todos|todas|vario|varia|varios|varias|otro|otra|otros|otras|mismo|misma|mismo|mismos|mismas|tan|tanto|tanta|tantos|tantas|alguien|nadie|cualquiera|cualesquiera|quienquiera|qienesquiera|demas|';
+
+	/**
+	 * Keyword generation (spanish)
+	 *
+	 * Retrieves a list of most common words and removes those 
+	 * listed in const palabras_no
+	 */
 	public static function palabras($texto=false, $limit=false){
 		# remove foreign characters
 		setlocale(LC_CTYPE, 'en_US.utf8');
@@ -79,7 +86,8 @@ abstract class Utils extends Library {
 	 * @param [string]$key 		the secret key.
 	 */
 	public static function cryptor($action=false, $str=false, $key=false){
-		if (!is_string($key)) $key = Core::config('secret');
+		if (!is_string($key) && !is_string($key = self::config('cryptor_secret')))
+			error('Cryptor needs a secret phrase.');
 		if (($action != 'encrypt' && $action != 'decrypt') ||
 			!is_string($str) || !is_string($key) || empty($str) || empty($key))
 			error('All arguments are required and type string in Cryptor.');

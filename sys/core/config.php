@@ -75,6 +75,12 @@ return array(
 
 	# if zlib enabled, use this compression level.
 	'compression'   => 0
+),
+
+'utils' => array(
+
+	'cryptor_secret' => 'h=)(7012'
 
 )
+
 );
