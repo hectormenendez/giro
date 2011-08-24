@@ -14,6 +14,7 @@ The last commit included the introduction of the SQLITE PDO object for handling 
 
 Changelog
 ----------
+- Added a ``.gitignore`` file to ignore changes inside TMP folder.
 - Slightly modified ``this file`` to show changelos in an easier way.
 - Added ``DB->is_empty()`` to check if the database has tables. ``for MySQL and SQLite drivers``.
 - `v2.0 Changes <http://github.com/hectormenendez/giro/blob/ab0a5c6508eef24dc19bb04b8235e2accab5928b/README.rst>`_
