@@ -1,16 +1,21 @@
 <?php
-ini_set('zlib.output_compression', 0);
-
 # Benchmarking start
 define('MEM', memory_get_usage());
 define('BMK', microtime(true));
 
+# This framework is an egomaniac.
+define('VER', 2.08);
+define('BRANCH','palmera');
+define('WHOAMI',ucfirst(BRANCH).' v'.substr((string)VER, 0,-1).' REVISION '.substr((string)VER, -1));
 
 # Get rid of Winshit and PHP < 5.3 users.
 if ( 5.3 > (float)substr(phpversion(),0,3) )
 	error('PHP 5.3+= required');
 if (isset($_SERVER[$k='SERVER_SOFTWARE']) && stripos($_SERVER[$k],'win32') !== false)
 	error('Windows? really? ...fuck off.');
+
+# this should not be here, someone move me.
+ini_set('zlib.output_compression', 0);
 
 # a safe shorthand for slashes
 define('SLASH', DIRECTORY_SEPARATOR);
@@ -167,7 +172,7 @@ function error   ($m=''){ return call_user_func('_error', E_USER_ERROR,   $m);}
 function warning ($m=''){ return call_user_func('_error', E_USER_WARNING, $m);}
 function notice  ($m=''){ return call_user_func('_error', E_USER_NOTICE,  $m);}
 
-function stop	 ($var=null, $debug=false) {
+function stop ($var=null, $debug=false) {
 	# destructors need to be told that execution stopped, yeah, they're that dumb.
 	if (!defined('DIED')) define('DIED',1);
 	# strings and ints are always echoed unless denug specified

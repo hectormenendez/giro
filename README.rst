@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r6
+v2.0r8
 ^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -43,3 +43,5 @@ Changelog
 - Added an isset to controller->view->render() in Application::load().
 - Utils::cryptor configuraton update; no longer gets secret from Core.
 - Added Database shortcuts for SELECT and INSERT; User can now change Fetching style.
+- Organized DB Library; Improved consistency in DB Methods; Added DB->update() and DB->delete() shortcuts;
+- Updated default-installation-controller for latest version.
