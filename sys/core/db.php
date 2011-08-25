@@ -63,6 +63,7 @@ class DB extends Library {
 	 * @param [string] $port     Valid Port number fort database [defaults to 3307]
 	 */
 	private function &construct_mysql(){
+		$this->driver = 'mysql';
 		if (
 			func_num_args() != 5 || 
 			!@list($db,$password,$user,$host,$port) = func_get_args()
@@ -83,7 +84,6 @@ class DB extends Library {
 			$this->instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		}
 		catch (PDOException $e) { $this->error($e); }
-		$this->driver = 'mysql';
 		$this->name   = $db;
 		return $this;
 	}
@@ -102,6 +102,7 @@ class DB extends Library {
 	 * @param [string] $path The Database path.
 	 */
 	private function &construct_sqlite(){
+		$this->driver = 'sqlite';
 		if (func_num_args() != 1 || !@list($path) = func_get_args())
 			error('Invalid mysql arguments');
 		# If not a valid path specified, generate one for the app.
@@ -113,7 +114,6 @@ class DB extends Library {
 			$this->instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		} 
 		catch (PDOException $e) { $this->error($e); }
-		$this->driver = 'sqlite';
 		return $this;
 	}
 
@@ -150,41 +150,126 @@ class DB extends Library {
 		$this->queries[$this->lastSQL] = $exed->fetchAll($this->fetching);
 		return $this->queries[$this->lastSQL];
 	}
+ 	/**
+ 	 * SELECT statement shortcut
+ 	 * 
+ 	 * @param req string $table     Table Name
+ 	 * @param opt string $selector  Column selector, Defaults to *.
+ 	 * @param opt string $condition Conditions to apply.
+ 	 * @param opt  mixed $values    Replacement values for condition.
+ 	 *
+ 	 * @return mixed - Query result, varies depending on default fetching style.
+ 	 *               - First Column array, If only one column is specified.
+ 	 *               - First Row if a LIMIT 1 is specified.
+ 	 *
+ 	 * @log     2011/AUG/24 17:17   Moved condition checking to its own method.
+ 	 * @working 2011/AUG/24 14:23
+ 	 * @created 2011/AUG/24 12:01
+ 	 */
+ 	public function select($table=false, $selector=false, $condition='', $values=null){
+ 		if (!$selector) $selector = '*';
+ 		if (
+	 		!is_string($table)    || 
+	 		!is_string($selector) ||
+	 		!empty($condution) && !is_string($condition)
+	 	) error('Bad arguments for SELECT statement');
+	 	# store current fetching style
+	 	$fetching = $this->fetching;
+	 	# start building statment.
+	 	$sql = "SELECT $selector FROM $table";
+	 	# selector only has one column? return only that.
+	 	if (trim($selector) != '*' && strpos($selector, ',')===false)
+	 		$this->fetching = DB::FETCH_COLUMN;
+	 	# there are no conditions: query, restore original fetching and return
+	 	if (empty($condition)) return $this->queryandfetch($sql, $fetching);
+	 	# do we really need to add a WHERE statement? 
+	 	if ($this->is_condition($condition)) 
+	 		 $sql .= " WHERE $condition";
+	 	else $sql .= " $condition";
+		# extract values, and do a normal prepared query.
+		$values = array_slice(func_get_args(),3);
+		$qry = $this->query($sql, $values);
+		# if the SQL is limited to one, just return first row,col.
+		if (stripos($condition, 'LIMIT 1')!==false) return array_shift($qry);
+		return $qry;
+ 	}
+ 
+ 	/**
+	 * INSERT statement shortcut
+	 *
+	 * @param req string $table    Table name.
+	 * @param req  array $column   Associative array, keys act as column names.
+	 *
+ 	 * @return bool Execution status.
+	 *
+	 * @log     2011/AUG/24 19:14  Column will be required to be an array.
+	 * @log     2011/AUG/24 17:47  Renamed $selector to $column.
+	 * @log     2011/AUG/24 17:36  Moved selector checking to its own method.
+	 * @working 2011/AUG/24 15:21
+	 * @created 2011/AUG/24 14:25
+	 */
+	 public function insert($table=false, $column=false){
+	 	if (!is_string($table)                    || 
+		 	!($column = $this->column_args($column))
+		) error('Bad arguments for INSERT statement');
+		if (stripos($table, 'INSERT')!==false) return false;
+		$sql = "INSERT INTO $table ("
+				.implode(',', array_keys($column)).") VALUES ("
+				.implode(',', array_fill(0, count($column),'?')).")";
+		return $this->exec($sql, array_values($column));
+	 }
 
 	/**
-	 * Preparing statements.
+	 * UPDATE statement shortcut
 	 *
-	 * Provide a common interface for prepared statements for query and exec
-	 *
-	 * @param [string] $sql       The SQL to execute. 
-	 *                            It accepts named and unnamed prepared statements.
-	 *                            ie: 'SELECT * FROM table WHERE id=?'
-	 *                            or: 'SELECT * FROM table WHERE id=:id'
-	 *
-	 * @param [mixed]  $Narg      The replacement values for the prepared statement.
-	 *                            ie: (string)'1' OR (int)1
-	 *                            or in case of named statement: array(':id'=>'1')
-	 *
-	 * @return [object reference] The prepared and queried object.
+	 * @param req string $table     Table name.
+	 * @param req  array $column    Associative array, keys act as column names.
+ 	 * @param opt string $condition Conditions to apply.
+ 	 * @param opt  mixed $value     Replacement values for condition.
+ 	 *
+ 	 * @return bool Execution status.
+ 	 *
+	 * @working 2011/AUG/24 20:26
+	 * @created 2011/AUG/24 16:37
 	 */
-	private function &prepare(){
-		if (($num = func_num_args())<1) error('Invalid number of arguments');
-		$arg = func_get_args();
-		$sql = array_shift($arg);
-		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
-		try {
-			# if there's already a cached version of this preparation, return it.
-			if (!isset($this->statement[$sql]) || !is_object($this->statement[$sql]))
-				$this->statement[$sql] = $this->instance->prepare($sql);
-			if ($num > 1 && (isset($arg[0]) && is_array($arg[0])) && $num > 2)
-				error('Only one argument required when using an array for replacement statements.');
-			elseif (isset($arg[0]) && is_array($arg[0])) $arg = $arg[0];
-			$this->lastEXE = $this->statement[$sql]->execute($arg);			
-		}
-		catch (PDOException $e) { $this->error($e); }
-		$this->lastSQL = $sql;
-		return $this->statement[$sql];
+	public function update($table=false, $column=false, $condition=false, $value=false){
+	 	if (!is_string($table)                    || 
+		 	!($column = $this->column_args($column))
+		) error('Bad arguments for UPDATE statement');
+		if (stripos($table, 'UPDATE')!==false) return false;
+		$keys = implode(',',array_map(function($a){ return $a.'=?';}, array_keys($column)));
+		$sql = "UPDATE $table SET $keys";
+		# if no condition is  given, execute query now.
+		if (!$this->is_condition($condition)) return $this->exec($sql, array_values($column));
+		$sql .= " WHERE $condition";
+		# is the user sending replacing values?  merge them.
+		$value = array_slice(func_get_args(),3);
+		return $this->exec($sql, array_merge(array_values($column), $value));
 	}
+
+	/**
+	 * DELETE statement shortcut
+	 *
+	 * @param req string $table     Table name.
+ 	 * @param opt string $condition Conditions to apply.
+ 	 * @param opt  mixed $value     Replacement values for condition.
+ 	 *
+ 	 * @return bool Execution status.
+ 	 *
+ 	 * @working 2011/AUG/24 20:54
+	 * @created 2011/AUG/24 20:44
+	 */
+	public function delete($table=false, $condition=false, $value=false){
+		if (!is_string($table)                 || 
+			stripos($table, 'DELETE') !==false ||
+			!$this->is_condition($condition)
+		)	error('Bad arguments for DELETE statments');
+		# plain and simple
+		$value = array_slice(func_get_args(),2);
+		return $this->exec("DELETE FROM $table WHERE $condition", $value);
+		
+	}
+
 
 	/**
 	 * Export SQL Structure and Data.
@@ -252,88 +337,83 @@ class DB extends Library {
 		return false;
 	}
 
+
 	/**
-	 * INSERT statement shortcut
-	 * @param req string $table    Table name.
-	 * @param req  mixed $selector - string column name, value must be set.
-	 *                             - associative array, keys act as column names.
-	 * @param opt  mixed $value    Only set when $selector is string.
+	 * Preparing statements.
 	 *
-	 * @working 2011/AUG/24 15:21
-	 * @created 2011/AUG/24 14:25
+	 * Provide a common interface for prepared statements for query and exec
+	 *
+	 * @param [string] $sql       The SQL to execute. 
+	 *                            It accepts named and unnamed prepared statements.
+	 *                            ie: 'SELECT * FROM table WHERE id=?'
+	 *                            or: 'SELECT * FROM table WHERE id=:id'
+	 *
+	 * @param [mixed]  $Narg      The replacement values for the prepared statement.
+	 *                            ie: (string)'1' OR (int)1
+	 *                            or in case of named statement: array(':id'=>'1')
+	 *
+	 * @return [object reference] The prepared and queried object.
 	 */
-	 public function insert($table=false, $selector=false, $value=false){
-	 	if (
-		 	!is_string($table)                                           ||
-		 	# selector can only be array or string
-		 	(!is_string($selector) && !is_array($selector))              ||
-		 	# selector is string, must contain a value
-		 	(is_string($selector) && empty($value))                      ||
-		 	# value set, selector must only specify one column
-		 	(!empty($value) &&  
-				(!is_string($selector) || strpos($selector,',')!==false)
-			)                                                            ||
-		 	# selector is array, must have values
-		 	(is_array($selector) && empty($selector))                    ||
-		 	# selector is array, no value must be set
-		 	(is_array($selector) && !empty($value))                      ||
-		 	# selector is array, it must be associative
-		 	(is_array($selector) && array_keys($selector) === range(0,count($selector)-1))
-		) error('Bad arguments for INSERT statement');
-		# all clear for work
-		# if selecto is string convert it to "right" format.
-		if (is_string($selector)) $selector = array($selector => $value);
-		$sql = "INSERT INTO $table ("
-			.implode(',', array_keys($selector)).") VALUES ("
-			.implode(',', array_fill(0, count($selector),'?')).")";
-		return $this->exec($sql, array_values($selector));
-	 }
+	private function &prepare(){
+		if (($num = func_num_args())<1) error('Invalid number of arguments');
+		$arg = func_get_args();
+		$sql = array_shift($arg);
+		if (empty($sql) || !is_string($sql)) error('Invalid SQL.');
+		try {
+			# if there's already a cached version of this preparation, return it.
+			if (!isset($this->statement[$sql]) || !is_object($this->statement[$sql]))
+				$this->statement[$sql] = $this->instance->prepare($sql);
+			if ($num > 1 && (isset($arg[0]) && is_array($arg[0])) && $num > 2)
+				error('Only one argument required when using an array for replacement statements.');
+			elseif (isset($arg[0]) && is_array($arg[0])) $arg = $arg[0];
+			$this->lastEXE = $this->statement[$sql]->execute($arg);			
+		}
+		catch (PDOException $e) { $this->error($e); }
+		$this->lastSQL = $sql;
+		return $this->statement[$sql];
+	}
 
 
- 	/**
- 	 * SELECT statement shortcut
- 	 * 
- 	 * @param req string $table     Table Name
- 	 * @param opt string $selector  Column selector, Defaults to *.
- 	 * @param opt string $condition Conditions to apply.
- 	 * @param opt  mixed $values    Replacement values for prepared queries.
- 	 *
- 	 * @return mixed - Query result, varies depending on default fetching style.
- 	 *               - First Column array, If only one column is specified.
- 	 *               - First Row if a LIMIT 1 is specified.
- 	 *
- 	 * @working 2011/AUG/23 14:23
- 	 * @created 2011/AUG/24 12:01
- 	 */
- 	public function select($table=false, $selector=false, $condition='', $values=null){
- 		if (!$selector) $selector = '*';
- 		if (
-	 		!is_string($table)    || 
-	 		!is_string($selector) ||
-	 		!empty($condution) && !is_string($condition)
-	 	) error('Bad arguments for SELECT statement');
-	 	# store current fetching style
-	 	$fetching = $this->fetching;
-	 	# start building statment.
-	 	$sql = "SELECT $selector FROM $table";
-	 	# selector only has one column? return only that.
-	 	if (trim($selector) != '*' && strpos($selector, ',')===false)
-	 		$this->fetching = DB::FETCH_COLUMN;
-	 	# there are no conditions: query, restore original fetching and return
-	 	if (empty($condition)) return $this->queryandfetch($sql, $fetching);
-	 	# do we really need to add a WHERE statement? 
-	 	if (
-		 	stripos($condition, 'WHERE') !== false ||
-		 	preg_match('%=|<|>|!|~%', $condition)   # relational operators
-	 	)    $sql .= " WHERE $condition";
-	 	else $sql .= " $condition";
-		# extract values, and do a normal prepared query.
-		$values = array_slice(func_get_args(),3);
-		$qry = $this->query($sql, $values);
-		# if the SQL is limited to one, just return first row,col.
-		if (stripos($condition, 'LIMIT 1')!==false) return array_shift($qry);
-		return $qry;
- 	}
+	/**
+	 * Validates Arguments for 
+	 * Allows a method to accept column names and a replacement value for it
+	 * assigned in two manners:
+	 *
+	 * 1) As an array
+	 *    method('table', array(
+	 *      'col1' => 666,
+	 *      'col2' => 'sss'
+     *    ));
+	 * 2) As a single string with single replacement:
+	 *    method('table', 'col1', 666);
+	 *
+	 * @note The second form seemed like a good idea at the begginning but it 
+	 *       implementing it in a constant way, was more than difficult.
+	 *       Methods will be using the first form, and I'll leave the second 
+	 *       untouched if I think of a clever way to implement both,
+	 * 
+	 * @log     2011/AUG/24 19:27 Added description and example.
+	 * @working 2011/AUG/24 17:44 Moved from $this->insert()
+	 * @created 2011/AUG/24 16:38
+	 */
+	private function column_args($column, $value=null){
+	 	if  ( 
+		 	# column can only be array or string
+		 	(!is_string($column) && !is_array($column))                              ||
+		 	# column is string, must contain a value
+		 	(is_string($column) && empty($value))                                    ||
+		 	# value set, column must only specify one column
+		 	(!empty($value) && (!is_string($column) || strpos($column,',')!==false)) ||
+		 	# column is array, must have values
+		 	(is_array($column) && empty($column))                                    ||
+		 	# column is array, no $value must be set
+		 	(is_array($column) && !empty($value))                                    ||
+		 	# column is array, it must be associative
+		 	(is_array($column) && array_keys($column) === range(0,count($column)-1))
+		) return false;
+		# unify selector
+		return is_string($column)? array($column => $value) : $column;
+	}
 
  	/**
  	 * Queries given SQL, fetches with currently set style 
@@ -350,11 +430,24 @@ class DB extends Library {
  	}
 
 	/**
+	 * @working 2011/AUG/24 17:09 Moved from $this->select();
+	 * @created 2011/AUG/24 17:00
+	 */
+	private function is_condition($condition){
+		return
+			stripos($condition, 'WHERE') === false && # doesn't have WHERE [auto added]
+		 	preg_match('%=|<|>|!|~%', $condition);    # has relational operators
+	}
+
+	/**
 	 * PDOException extractor.
 	 */
-	private static function error(&$exception){
+	private function error(&$exception){
 		$e = $exception->getMessage();
-		$e = substr($e, strpos($e, ':') +1 );
+		switch($this->driver){
+			case 'mysql' : $e = substr($e, strrpos($e, ']')+1); break;
+			case 'sqlite': $e = substr($e,  strpos($e, ':')+1); break;
+		}
 		return error($e);
 	}
 
