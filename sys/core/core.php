@@ -75,6 +75,9 @@ abstract class Core extends Library {
 	 * required. It also runs static pseudo-constructors, if available.
 	 * It used without arguments, returns an array of loaded classes.
 	 *
+	 * @log 2011/AUG/25 17:06 Libraries can now be stored in it's own directory.
+	 *                        it also creates a constant with the uppercased name
+	 *                        holding appliucation path.
 	 * @return [array] Loaded Library array or sends error.
 	 */
 	public static function library($name=false){
@@ -82,7 +85,13 @@ abstract class Core extends Library {
 		if (!is_string($name)) return self::$library;
 		if (in_array($name, self::$library)) return true;
 		$found = file_exists($path=CORE.$name.EXT) ||
-				 file_exists($path=LIBS.$name.EXT);
+				 (
+				 file_exists($path=LIBS.$name.EXT) &&
+				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH)
+				 ) || (
+				 file_exists($path=LIBS.$name.SLASH.$name.EXT) &&
+				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH)
+				);
 		if (!$found) {
 			$rx = '/\w+(control|model|view)/';
 			# If an APP is active, check its folder.
