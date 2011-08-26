@@ -29,12 +29,12 @@ class DB extends Library {
 	 * Internal instance constructor.
 	 *
 	 * redirects the original static call to an driver-specific cosntructor.
+	 *
+	 * @log 2011/AGO/26 08:02 replaced manual check for Library::samefile()
 	 */
 	public function &__construct(){
-		# a rudimentaty-yet-effective way of making sure the class 
-		# won't be constructed from outside.
-		$bt = debug_backtrace();
-		if ($bt[0]['file']!==__FILE__) error(__CLASS__.' cannot be instanced.');
+		# Allow only this file to construct the class.
+		if (!parent::samefile()) error('DB cannot be instanced directly.');
 		$args = func_get_args();
 		$type = (string)array_shift($args);
 		if (!is_callable(array($this,'construct_'.$type)))

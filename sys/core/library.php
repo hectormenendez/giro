@@ -31,7 +31,7 @@ abstract class Library {
 	 *
 	 * @todo	Set config keys from here
  	 */
-	public static function &config($key = false, $val = null, $class = false){
+	final protected static function &config($key = false, $val = null, $class = false){
 		$false = false;	
 		$class = strtolower(is_string($class)? $class : self::caller());
 		# GET Mode
@@ -49,6 +49,21 @@ abstract class Library {
 		if (!isset($conf[$class])) $conf[$class] = array();
 		$conf[$class][$key] = $val;
 		return $conf[$class][$key];
+	}
+
+	/**
+	 * a rudimentaty-yet-effective way of checking 
+	 * last calling was made from the same file.
+	 *
+	 * @working 2011/AGO/26 07:49
+	 * @created 2011/AGO/26 07:31
+	 */
+	final protected static function samefile(){
+		$class = self::caller();
+		$bt = debug_backtrace();
+		$curr = current($bt);
+		$next = next($bt);
+		return ($curr['file'] === $next['file']);
 	}
 
 	/**
