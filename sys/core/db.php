@@ -305,15 +305,36 @@ class DB extends Library {
 
 	/**
 	 * Import external SQL
-	 * It only wraps a file_get_contents call.
+	 *
+	 * @param string  $path  A valid path where the SQL statements reside.
+	 *
+	 * @return bool          Wether commit was succesful or not.
+	 *
+	 * @log 2011/AUG/26 15:32 It now executes lines by line inside a transaction.
 	 */
 	public function import($path=false){
 		if (!is_string($path) || !file_exists($path))
 			error('Could not import, missing file.');
+		# split statements and execute'em one by one.
 		$sql = file_get_contents($path);
-		# no preparation needed, execute directly from instance.
-		return $this->instance->exec($sql);
+		$this->instance->beginTransaction();
+		$i = 0;
+		foreach (explode(';', $sql) as $statement) {
+			if (!$statement = trim($statement)) continue;
+			$i++;
+			try { 
+				$this->instance->exec($statement);
+			} catch (PDOException $e) { 
+				$this->instance->rollBack();
+				$word = Utils::firstword($statement);
+				$line = preg_match_all("/[\n\r]/", substr($sql, 0, strpos($sql, $statement)), $m);
+				error("Imported failed at line $line on statement “{$word}…”."); 
+			}
+		}
+		return $this->instance->commit();
 	}
+
+
 
 	/**
 	 * Check if current database has any tables.

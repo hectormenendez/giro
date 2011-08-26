@@ -1,23 +1,34 @@
 <?php
+/**
+ * Small snippets or soon-to-be libraries, who knows.
+ *
+ * The golden rule is: If it gets big, move it to its own library.
+ */
 abstract class Utils extends Library {
 
 	/**
-	 * Url prettify
-	 * Replaces non-us-ascii characters so the string 
-	 * can be used as SEO friendly url.
+	 * Returns the first word of any string.
+	 *
+	 * @created 2011/AUG/26 16:17
 	 */
-	public static function urlify($url=false, $spacer='-'){
-		if (!is_string($url)) error('Expecting String');
-		# substitutes anything but letters, numbers and '_' 
-		$url = preg_replace('~[^\\pL0-9_]+~u', $spacer, $url); 
-		$url = trim($url, $spacer);
- 		# TRANSLIT does the whole job
-		setlocale(LC_CTYPE, 'en_US.utf8');
-		$url = iconv("utf-8", "us-ascii//TRANSLIT", $url);
-		$url = strtolower($url);
-		# keep only letters, numbers, '_' and separator
-		$url = preg_replace('~[^-a-z0-9_]+~', '', $url);
-		return $url;
+	public static function firstword($haystack){
+		$needle = self::strpos_array($haystack, array("\n","\r","\t"," ",''));
+		return substr($haystack,0,$needle);
+	}
+
+	/**
+	 * same as strpos with two mayor differences:
+	 * - Accepts an array of strings.
+	 * - if empty string given, returns the string length.
+	 *
+	 * @created 2011/AUG/26 16:15
+	 */
+	public static function strpos_array($haystack, array $needle){
+		foreach($needle as $needle){
+			if ($needle === '') return strlen($haystack);
+			if (($pos = strpos($haystack, $needle)) !== false) return $pos;
+		}
+		return false;
 	}
 
 	const palabras_no = '|a|e|y|o|u|si|tambien|tengo|tenia|tendre|tienes|tienen|tuve|tuviste|tuvieron|tendre|tendras|tendran|tenemos|tuvimos|tendremos|sido|dare|daras|daremos|dimos|di|diste|daras|daran|dieron|dan|das|estamos|estas|estoy|estan|estaremos|estuvimos|estuviste|estaran|estuvieron|estuve|di|dio|das|pido|pides|piden|pedimos|pediste|pedir|damos|dan|dimos|vas|voy|vamos|van|vayan|vayamos|ya|ha|he|has|han|hemos|heme|habra|habras|habran|habremos|no|un|unos|cuando|llego|llegas|llegan|llegamos|quiza|pasa|pasas|pasan|quizas|han|has|mejor|peor|siempre|nunca|igual|hemos|del|al|ni|asi|etc|solo|sabe|sabes|saben|mis|nuestros|tus|mas|menos|entre|por|soy|eres|somos|son|hoy|ayer|manana|porque|porques|pero|peros|es|fue|sera|seran|seras|seremos|ser|ante|bajo|cabe|como|con|contra|de|desde|durante|en|entre|excepto|hacia|hasta|mediante|para|por|pro|seg|sin|so|sobre|tras|versus|via|yo|mi|conmigo|tu|vos|usted|ti|contigo|el|ella|ello|si|consigo|nosotros|nosotras|ustedes|vosotros|vosotras|ellos|ellas|consigo|me|nos|te|os|lo|la|le|se|los|las|les|este|esta|esto|estos|estas|ese|esa|eso|esos|esas|aquel|aquella|aquello|aquellos|aquellas|mio|mia|mios|mias|tuyo|tuya|tuyos.tuyas|suyo|suya|suyos|suyas|nuestro|nuesta|nuestros|nuestras|vuestro|vuestra|vuestros|vuestras|que|quien|quienes|cual|cuales|cuanto|cuantos|cuanta|cuantas|uno|una|unos|unas|alguno|alguna|algunos|algunas|algo|ninguno|ninguna|ningunos|ningunas|nada|poco|poca|pocos|pocas|escaso|escasa|escasos|escasas|mucho|mucha|muchos|muchas|demasiado|demasiada|demasiados|demasiadas|todo|toda|todos|todas|vario|varia|varios|varias|otro|otra|otros|otras|mismo|misma|mismo|mismos|mismas|tan|tanto|tanta|tantos|tantas|alguien|nadie|cualquiera|cualesquiera|quienquiera|qienesquiera|demas|';
@@ -45,6 +56,25 @@ abstract class Utils extends Library {
 		return (int)$limit? array_slice($words, 0, (int)$limit) : $words;
 	}
 
+
+	/**
+	 * Url prettify
+	 * Replaces non-us-ascii characters so the string 
+	 * can be used as SEO friendly url.
+	 */
+	public static function urlify($url=false, $spacer='-'){
+		if (!is_string($url)) error('Expecting String');
+		# substitutes anything but letters, numbers and '_' 
+		$url = preg_replace('~[^\\pL0-9_]+~u', $spacer, $url); 
+		$url = trim($url, $spacer);
+ 		# TRANSLIT does the whole job
+		setlocale(LC_CTYPE, 'en_US.utf8');
+		$url = iconv("utf-8", "us-ascii//TRANSLIT", $url);
+		$url = strtolower($url);
+		# keep only letters, numbers, '_' and separator
+		$url = preg_replace('~[^-a-z0-9_]+~', '', $url);
+		return $url;
+	}
 
 	/**
 	 * id shortener, two ways.
