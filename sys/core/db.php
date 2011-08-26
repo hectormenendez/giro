@@ -337,6 +337,26 @@ class DB extends Library {
 		return false;
 	}
 
+	/**
+	 * Check if Table exists
+	 *
+	 * @return bool wether table exists or not.
+	 *
+	 * @working 2011/AUG/25 18:49
+	 * @created 2011/AUG/25 18:28
+	 */
+	public function is_table($table=false){
+		if (!is_string($table)) error('Must Provide a table name');
+		switch($this->driver){
+			case 'mysql': $sql =
+			  "SELECT count(*)
+			     FROM information_schema.tables
+			    WHERE `table_schema`='{$this->name}' AND `table_name`='{$table}'";
+			break;
+		}
+		return (bool)$this->instance->query($sql)->fetchColumn();
+	}
+
 
 	/**
 	 * Preparing statements.
