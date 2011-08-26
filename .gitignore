@@ -1,4 +1,4 @@
 tmp/*
 giro.changelog
 working.changelog
-
+.hg*
