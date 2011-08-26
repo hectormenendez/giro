@@ -87,10 +87,10 @@ abstract class Core extends Library {
 		$found = file_exists($path=CORE.$name.EXT) ||
 				 (
 				 file_exists($path=LIBS.$name.EXT) &&
-				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH)
+				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH, true)
 				 ) || (
 				 file_exists($path=LIBS.$name.SLASH.$name.EXT) &&
-				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH)
+				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH, true)
 				);
 		if (!$found) {
 			$rx = '/\w+(control|model|view)/';
