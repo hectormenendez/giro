@@ -31,7 +31,7 @@ abstract class Library {
 	 *
 	 * @todo	Set config keys from here
  	 */
-	final protected static function &config($key = false, $val = null, $class = false){
+	public static function &config($key = false, $val = null, $class = false){
 		$false = false;	
 		$class = strtolower(is_string($class)? $class : self::caller());
 		# GET Mode

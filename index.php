@@ -4,9 +4,9 @@ define('MEM', memory_get_usage());
 define('BMK', microtime(true));
 
 # This framework is an egomaniac.
-define('VER', 2.08);
+define('VER', 2.012);
 define('BRANCH','palmera');
-define('WHOAMI',ucfirst(BRANCH).' v'.substr((string)VER, 0,-1).' REVISION '.substr((string)VER, -1));
+define('WHOAMI',ucfirst(BRANCH).' v'.(is_int(VER)? VER.'.0' : substr((string)VER, 0,-2).' REVISION '.substr((string)VER, -2)));
 
 # Get rid of Winshit and PHP < 5.3 users.
 if ( 5.3 > (float)substr(phpversion(),0,3) )

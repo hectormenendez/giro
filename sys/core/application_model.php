@@ -1,5 +1,5 @@
 <?php
-class Application_Model {
+class Application_Model extends Library {
 
 	/**
 	 * Model Constuctor

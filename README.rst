@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r8
+v2.0r12
 ^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -45,3 +45,7 @@ Changelog
 - Added Database shortcuts for SELECT and INSERT; User can now change Fetching style.
 - Organized DB Library; Improved consistency in DB Methods; Added DB->update() and DB->delete() shortcuts;
 - Updated default-installation-controller for latest version.
+- Library autoloader support for Libraries stored in subdirectories 
+- Added DB->istable() [mysql driver only]
+- Added Library::samefile() and updated DB::__construct() to use it.
+- Application_Model now extends Library and other Small fixes.
