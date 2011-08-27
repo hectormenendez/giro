@@ -60,6 +60,7 @@ class Application_Model extends Application_Common {
 					$token_secret !== Utils::cryptor('decrypt', $_POST['token'])
 				) return false;
 				# post matched, Allow to continue;
+				unset($_POST['token']);
 			}
 			# keep same secret until post request found.
 		}

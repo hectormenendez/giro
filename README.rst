@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r20
+v2.0r21
 ^^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -57,4 +57,4 @@ Changelog
 - Implemented Application_Common class for added flexibility. [A couple of "unpushed" commits were lost due to an I/O error].
 - Added Library::class_calling().
 - Headers were being sent after content in Application_View.
-
+- Application_Model->token() unsetting ['token'] after processing it.
