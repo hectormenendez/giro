@@ -37,7 +37,8 @@ class Application_Model extends Library {
 			$token_secret = file_get_contents($path);
 			# if has post request, get and compare, allow or deny-		
 			if (!empty($_POST)){
-				if (!isset($_POST['token']) || 
+				if (!isset($_POST['token']) ||
+					 empty($_POST['token']) ||
 					$token_secret !== Utils::cryptor('decrypt', $_POST['token'])
 				) return false;
 				# post matched, Allow to continue;
@@ -47,7 +48,7 @@ class Application_Model extends Library {
 		# generate new secret, define constants. allow to continue;
 		#$token_secret = $this->token_secret();
 		define('TOKEN_SECRET', $token_secret);
-		define('TOKEN_PUBLIC', Utils::cryptor('encrypt',TOKEN_SECRET));
+		define('TOKEN_PUBLIC', Utils::cryptor('encrypt', TOKEN_SECRET));
 		return true;
 	}
 

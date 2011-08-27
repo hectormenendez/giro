@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r13
+v2.0r15
 ^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -50,3 +50,5 @@ Changelog
 - Added Library::samefile() and updated DB::__construct() to use it.
 - Application_Model now extends Library and other Small fixes.
 - Utils is now part of CORE, Fixed DB->import()
+- Fixed a bug on Application_View, traling dot was missing.
+- Small Fix for Application_Model::token.
