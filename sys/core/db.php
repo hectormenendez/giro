@@ -162,6 +162,7 @@ class DB extends Library {
  	 *               - First Column array, If only one column is specified.
  	 *               - First Row if a LIMIT 1 is specified.
  	 *
+ 	 * @log     2011/AUG/27 14:03   Fixed a bug; fetching style was not being restored.
  	 * @log     2011/AUG/24 17:17   Moved condition checking to its own method.
  	 * @working 2011/AUG/24 14:23
  	 * @created 2011/AUG/24 12:01
@@ -189,6 +190,8 @@ class DB extends Library {
 		# extract values, and do a normal prepared query.
 		$values = array_slice(func_get_args(),3);
 		$qry = $this->query($sql, $values);
+		# restore original fetching style;
+		$this->fetching = $fetching;
 		# if the SQL is limited to one, just return first row,col.
 		if (stripos($condition, 'LIMIT 1')!==false) return array_shift($qry);
 		return $qry;
