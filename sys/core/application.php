@@ -54,10 +54,17 @@ class Application extends Library {
 	 * Application Path Finder
 	 * Attempt to load the controller.[files have priority over directories]
 	 * ie: APP/main.php  overrides APP/main/main.php
+	 *
+	 * @param string $type     specifies a different extension.
+	 * @param string  $app     specifies a different app name.
+	 *
+	 * @return mixed           Full path or false.
+	 *
+	 * @log 2011/AUG/26 18:43  Changed defaults and added commentary.
 	 */
-	public static function path($type = '', $app = APP_NAME){
+	public static function path($type=EXT, $app = APP_NAME){
+		if (!is_string($type)) $type = '';
 		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
-		$false = false;
 		$found = file_exists($path = APP.$app.$type) ||
 				 file_exists($path = APP.$app.SLASH.$app.$type);		
 		if (!$found) return false;

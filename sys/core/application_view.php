@@ -85,8 +85,19 @@ class Application_View {
 	private static $rendered = null;
 
 	/**
-	 * Renders a view to the browser passing the current's view scope 
-	 * as global scope for the file [including public functions];
+	 * View Renderer
+	 * Render to browser passing the current view's scope
+	 * as global scope [public methods will be translated to functions]
+	 *
+	 * @param string           Name of view, following the name space:
+	 *                             APP_PATH/APP_NAME.{name}.html
+	 *
+	 * @note                   - No need of adding extension or any path.
+	 *                         - If omited, it will look for the default view,
+	 *                         - if it doesn't exist, it will just stop execution.
+	 *
+	 * @log 2011/AUG/26 18:54  - Fixed a bug, trailing "dot" wasn't being added.
+	 *                         - Added comments and note.
 	 */
 	public function render($path = null){
 		# this method can only run once.
@@ -94,7 +105,7 @@ class Application_View {
 		self::$rendered = true;
 		# if no view is provided look for the default,
 		# if that doesn't exists either, just stop.
-		$path = Application::path(is_string($path)? $path.'.html' : '.html');
+		$path = Application::path(is_string($path)? '.'.$path.'.html' : '.html');
 		if (!is_string($path) || !file_exists($path)) stop();
 		# generate a shared scope.
 		# since this view will mostly be shared by external files we've to 
