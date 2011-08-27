@@ -1,5 +1,5 @@
 <?php
-class Application_Model extends Library {
+class Application_Model extends Application_Common {
 
 	/**
 	 * Model Constuctor
@@ -10,7 +10,25 @@ class Application_Model extends Library {
 		# big TODO.
 		date_default_timezone_set('America/Cancun');
 		# if run a pseudo constructor if exist.
-		if (is_callable(array($this,'_construct'))) return $this->_construct();
+		if (method_exists($this, '_construct') && is_callable(array($this,'_construct'))) 
+			return $this->_construct();
+	}
+
+	/**
+	 * Common method for  static libraries to check if given object
+	 * has a database object instantiated. if so, returns it.
+	 *
+	 * @return mixed  - reference of database object if found.
+	 *                - false if nothing found.
+
+	 * @log     2011/AUG/27 00:05 Changed visibility from protected to public
+	 * @created 2011/AUG/25 18:14
+	 */
+	public static function &db_look(&$app=false){
+		$false = false;
+		if (!parent::is_model($app)) return $false;
+		foreach($app as $k=>$o) if ($o instanceof DB) return $app->$k;
+		return $false;
 	}
 
 	/**
@@ -57,32 +75,6 @@ class Application_Model extends Library {
 		$token_secret = substr(md5($parts[0].'2E(0)Wyn3'.$parts[1]),16);
 		file_put_contents(TMP.UUID.'.token', $token_secret);
 		return $token_secret;
-	}
-
-	/**
-	 * Common method fot libraries to check if given object 
-	 * is a correct} instance of Model.
-	 *
-	 * @working 2011/AUG/25 18:15
-	 * @created 2011/AUG/25 18:11
-	 */
-	protected static function is_model($app=false){
-		return 	is_object($app) && $app instanceof Model;
-	}
-
-	/**
-	 * Common method for  static libraries to check if given object
-	 * has a database object instantiated. if so, returns it.
-	 *
-	 * @return mixed  - reference of database object if found.
-	 *                - false if nothing found.
-	 * @created 2011/AUG/25 18:14
-	 */
-	protected static function &db_look(&$app=false){
-		$false = false;
-		if (!self::is_model($app)) return $false;
-		foreach($app as $k=>$o) if ($o instanceof DB) return $app->$k;
-		return $false;
 	}
 
 }

@@ -96,8 +96,6 @@ class Application extends Library {
 		if (!class_exists($inst, false)) error('Invalid '.ucfirst($type).' Declaration.');
 		# instantiate the class and send uri parts to constructor.
 		$inst = new $inst($args);
-		# Views don't need constructors.
-		if ($inst instanceof View) return $inst;
 		# fill out controller.
 		if ($inst instanceof Control){
 			$inst->view  = &$view;

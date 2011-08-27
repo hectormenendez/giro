@@ -2,7 +2,20 @@
 /**
  * @todo rename tag methods and make sure they are not passed in App::render()
  */
-class Application_View {
+class Application_View extends Application_Common {
+
+	/**
+	 * View Constuctor
+	 * @created 2011/AUG/26 20:20
+	 */
+	final public function __construct(){
+		# convert template name.
+		if (!is_string($path = Application::config('template'))) $path = 'html5';
+		self::$template =  Application::config('template', HTML.$path.'.html');
+		# if run a pseudo constructor if exist.
+		if (method_exists($this, '_construct') && is_callable(array($this,'_construct'))) 
+			return $this->_construct();
+	}
 
 	# user can specify wether the view will produce cache headers
 	# using $this->view->cache = true/false from within the Cotroller / View-
@@ -25,12 +38,6 @@ class Application_View {
 		'vars'  => array(),
 		'func' => array()
 	);
-
-	public static function _construct(){
-		# convert template name.
-		if (!is_string($path = Application::config('template'))) $path = 'html5';
-		self::$template =  Application::config('template', HTML.$path.'.html');
-	}
 
 	/**
 	 * Method redirector
