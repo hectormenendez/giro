@@ -67,6 +67,38 @@ abstract class Library {
 	}
 
 	/**
+	 * Calling Class
+	 * Allow a method to know what class is calling it.
+	 *
+	 * @note Needs more testing.
+	 *
+	 * @todo Its almost too identicall to self::caller()
+	 *       this could use some refining. DRY.
+	 *  
+	 * @working 2011/AUG/27 03:19
+	 * @created 2011/AUG/27 02:48
+	 */
+	final protected static function class_calling(){
+		# get the child's class name.
+		$class = get_called_class();
+		$trace = debug_backtrace();
+		$found = false;
+		# find find ocurrence outside called class.
+		foreach($trace as $step){
+			# if we reach traces without classes it's time to give up.
+			if (!isset($step['class'])) return false;
+			if ($step['class'] == $class){
+				# the pointer is actually ahead one step, 
+				# so, this is more like a next();
+				$found = current($trace);
+				break;
+			}
+		}
+		if (!$found) return false;
+		return $found['class'];
+	}
+
+	/**
 	 * Child Detector
 	 * Returns the name of the class that's calling.
 	 * If the native function returns __CLASS__ it does a lot of parsing to find
