@@ -123,12 +123,6 @@ class Application_View extends Application_Common {
 		foreach($_SCOPE['funs'] as $v) eval($v);
 		foreach($_SCOPE['vars'] as $k=>$v) $$k=$v;
 		unset($k,$v,$this,$path);
-		# parse content with clean scope.
-		ob_start();
-		include $_SCOPE['path'];
-		$_SCOPE['cont'][1] = ob_get_clean();
-		# join content together
-		$content = implode($_SCOPE['cont']);
 		# prepare headers for render.
 		Core::headers_remove();
 		# set base headers
@@ -142,6 +136,12 @@ class Application_View extends Application_Common {
 			header('Cache-Control: must-revalidate,no-cache');
 			header('Expires: '.gmdate('D, d M Y H:i:s',time()-(60*60*24*30)).' GMT');
 		}
+		# parse content with clean scope.
+		ob_start();
+		include $_SCOPE['path'];
+		$_SCOPE['cont'][1] = ob_get_clean();
+		# join content together
+		$content = implode($_SCOPE['cont']);
 		# if available use zlib to compress the generated html.
 		# ob_gzhandler doesn't like getting ob_end_flush calls, so just output
 		# the buffer and let PHP's destruction process handle the rest.
