@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r22
+v2.0r23
 ^^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -59,4 +59,4 @@ Changelog
 - Headers were being sent after content in Application_View.
 - Application_Model->token() unsetting ['token'] after processing it.
 - Fetching style was not being restored on DB->select(); fixed it.
-
+- Added Control->reload() for reloading, redirecting the current application.
