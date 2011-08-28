@@ -1,0 +1,93 @@
+# Authentication Library for Palmera Framework.
+## v1.0
+
+Intented to ease the process of adding authentication to your site.
+
+Right now it's a VERY simple but functional solution.
+
+## Dependencies:
+
+- Must have an active Database connection.
+- Must have TOKENS enabled.
+
+## Usage:
+
+- Add `Auth::model()` to any part of a Model Class.
+##### Example:
+	<?php
+	class appModel extends Model {
+		/**
+		 * Pseudo constructor
+		 */
+		public function app(){
+			Auth::model($this);
+		}
+	}
+
+- Add `Auth::view();` to any part of a View Class.
+##### Example:
+	<?php
+	class appView extends View {
+		/**
+		 * Pseudo constructor
+		 */
+		public function app(){
+			Auth::view($this);
+		}
+	}
+
+- In your Controller, adapt the library to fit your needs.
+##### Example:
+	<?php
+	/**
+	 * http://url/app      < would render the auth view if user not logged.
+	 * http://url/app/auth < will:
+	 *                       - handle post data sent from the auth view.
+	 *                       - redirect back to main app if user logs in.
+	 *                       - show te login form if accessed directly.
+	 */
+	class appControl extends Control {
+		/**
+		 * Pseudo constructor
+		 */
+		public function app(){
+			if (!$this->model->auth->logged) return $this->auth();
+		}
+
+		public function auth(){
+			// if not logged in or login failed, present login form.
+			if (!$this->model->auth->login()){
+				$this->view->tag_title = "Login Form Title";
+				$this->view->render('auth'); // only if using custom view.
+			}
+			// user logged in, get rid of post data and render main view.
+			$this->reload();
+		}
+	}
+
+- Lastly, inside your view, choose where to render the login form.
+##### Example:
+	<div>some other element</div>
+	<?= $auth->render() ?>
+	<h2>bla blah</h2>
+
+## Note:
+
+The library doesn't require to load its elements separatedly, you can easily do it 
+from within the controller.
+##### Example:
+	<?php
+	class appControl extends Control {
+		/**
+		 * Pseudo constructor
+		 */
+		public function app(){
+			Auth::view($this->view);
+			Auth::model($this->model);
+			if (!$this->model->auth->logged) return $this->auth();
+		}
+	}
+
+## Changelog
+
+- 2011/AUG/28 Version 1.0
