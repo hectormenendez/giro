@@ -2,4 +2,4 @@ tmp/*
 giro.changelog
 working.changelog
 .hg*
-README.mkdn
+./README.mkdn
