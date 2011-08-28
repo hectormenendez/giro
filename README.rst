@@ -1,8 +1,8 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.0r23
-^^^^^^^
+v2.1
+^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
 
@@ -37,26 +37,5 @@ TODO
 Changelog
 ----------
 - `v2.0 Changes <http://github.com/hectormenendez/giro/blob/ab0a5c6508eef24dc19bb04b8235e2accab5928b/README.rst>`_
-- Added DB->is_empty() to check if the database has tables, MySQL and SQLite drivers.
-- Added .gitignore for PUB files and Prepare README.rst for future commits.
-- Added client side libraries.
-- Added an isset to controller->view->render() in Application::load().
-- Utils::cryptor configuraton update; no longer gets secret from Core.
-- Added Database shortcuts for SELECT and INSERT; User can now change Fetching style.
-- Organized DB Library; Improved consistency in DB Methods; Added DB->update() and DB->delete() shortcuts;
-- Updated default-installation-controller for latest version.
-- Library autoloader support for Libraries stored in subdirectories 
-- Added DB->istable() [mysql driver only]
-- Added Library::samefile() and updated DB::__construct() to use it.
-- Application_Model now extends Library and other Small fixes.
-- Utils is now part of CORE, Fixed DB->import()
-- Fixed a bug on Application_View, traling dot was missing.
-- Small Fix for Application_Model::token.
-- Updated Application_View  and Application_Control construction to match Application_Model's's.
-- Views now support pseudo constructors.
-- Implemented Application_Common class for added flexibility. [A couple of "unpushed" commits were lost due to an I/O error].
-- Added Library::class_calling().
-- Headers were being sent after content in Application_View.
-- Application_Model->token() unsetting ['token'] after processing it.
-- Fetching style was not being restored on DB->select(); fixed it.
-- Added Control->reload() for reloading, redirecting the current application.
+- `v2.1 Changes <http://github.com/hectormenendez/giro/blob/e608fe6d9f62095c376593d3cdb2bc63031c9ba0/README.rst>`_
+- Added Extension Auth, a simple helper for your authentication needs.

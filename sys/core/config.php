@@ -81,6 +81,11 @@ return array(
 
 	'cryptor_secret' => 'h=)(7012'
 
+),
+
+'auth' => array(
+	'admin_user' => 'admin',
+	'admin_pass' => 'palmera'
 )
 
 );
