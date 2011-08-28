@@ -12,8 +12,9 @@ Right now it's a VERY simple but functional solution.
 
 ## Usage:
 
-- Add `Auth::model()` to any part of a Model Class.
+Add `Auth::model()` to any part of a Model Class.
 ##### Example:
+
 	<?php
 	class appModel extends Model {
 		/**
@@ -24,7 +25,7 @@ Right now it's a VERY simple but functional solution.
 		}
 	}
 
-- Add `Auth::view();` to any part of a View Class.
+Add `Auth::view();` to any part of a View Class.
 ##### Example:
 	<?php
 	class appView extends View {
@@ -36,15 +37,15 @@ Right now it's a VERY simple but functional solution.
 		}
 	}
 
-- In your Controller, adapt the library to fit your needs.
+In your Controller, adapt the library to fit your needs.
 ##### Example:
 	<?php
 	/**
-	 * http://url/app      < would render the auth view if user not logged.
-	 * http://url/app/auth < will:
-	 *                       - handle post data sent from the auth view.
-	 *                       - redirect back to main app if user logs in.
-	 *                       - show te login form if accessed directly.
+	 * url/app      < would render the auth view if user not logged.
+	 * url/app/auth < would:
+	 *                Handle post data sent from the auth view.
+	 *                Redirect back to main app if user logs in.
+	 *                Show te login form if accessed directly.
 	 */
 	class appControl extends Control {
 		/**
@@ -65,11 +66,13 @@ Right now it's a VERY simple but functional solution.
 		}
 	}
 
-- Lastly, inside your view, choose where to render the login form.
+Lastly, inside your view, choose where to render the login form.
 ##### Example:
+`
 	<div>some other element</div>
 	<?= $auth->render() ?>
 	<h2>bla blah</h2>
+`
 
 ## Note:
 
