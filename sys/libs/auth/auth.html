@@ -9,12 +9,12 @@
 	<form autocomplete="off" method="post" action="<?=APP_URL?>auth" >
 		<div>
 			<label for="user">Usuario</label>
-			<input name="user"  type="text" required/>
+			<input id="user" name="user" type="text" required/>
 		</div>
 		<div>
 			<label for="pass">Constraseña</label>
-			<input name="pass"  type="password" required/>
-		<div>
+			<input id="pass" name="pass" type="password" required/>
+		</div>
 		<input name="token" type="hidden" value="<?=TOKEN_PUBLIC?>"/>
 		<input type="submit" value="Accesar"/>
 		<?php if (AUTH_FAILED): ?>
