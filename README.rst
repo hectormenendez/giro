@@ -39,3 +39,4 @@ Changelog
 - `v2.0 Changes <http://github.com/hectormenendez/giro/blob/ab0a5c6508eef24dc19bb04b8235e2accab5928b/README.rst>`_
 - `v2.1 Changes <http://github.com/hectormenendez/giro/blob/e608fe6d9f62095c376593d3cdb2bc63031c9ba0/README.rst>`_
 - Added Extension Auth, a simple helper for your authentication needs.
+- DB->insert() now can update upon duplicates, minor Auth update.

@@ -7,11 +7,6 @@
 ?>
 <div id="auth">
 	<form autocomplete="off" method="post" action="<?=APP_URL?>auth" >
-		<?php if (AUTH_FAILED): ?>
-		<div>
-			<h2>Credenciales Inválidas</h2>
-		</div>
-		<?php endif; ?>
 		<div>
 			<label for="user">Usuario</label>
 			<input name="user"  type="text" required/>
@@ -22,5 +17,10 @@
 		<div>
 		<input name="token" type="hidden" value="<?=TOKEN_PUBLIC?>"/>
 		<input type="submit" value="Accesar"/>
+		<?php if (AUTH_FAILED): ?>
+		<p>
+			<strong>Credenciales inválidas, intentelo nuevamente.</strong>
+		</p>
+		<?php endif; ?>
 	</form>
 </div>

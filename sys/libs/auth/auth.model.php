@@ -28,8 +28,6 @@ final class modelAuth extends Library {
 		#   false, not logged in.
 		#    null, failed login.
 		$this->logged = empty($auth)? false : ( (bool)$auth['logged']? (int)$auth['id_user'] : null );
-		# if failed login, delete row for next sesion.
-		if ($this->logged === null) $this->logout();
 	}
 
 	/**
@@ -44,7 +42,7 @@ final class modelAuth extends Library {
 	 * @created 2011/AUG/26 08:45
 	 */
 	public function login(){
-		# user alreadt logged? go on with my life.
+		# user already logged? no need of doing this.
 		if ($this->logged) return $this->logged;
 		# if no post data is being sent; do nothing.
 		if (empty($_POST)) return false;
@@ -79,10 +77,13 @@ final class modelAuth extends Library {
 	 * @created 2011/AUG/27 23:23
 	 */
 	private function fail(){
+		# insert or replace row.
 		$this->db->insert('auth_login', array(
-			'uuid' => UUID,
-			'date' => date(DATE_W3C)
-		));
+			'uuid'    => UUID,
+			'id_user' => null,
+			'logged'  => 0,
+			'date'    => date(DATE_W3C)
+		),  'id');
 		return $this->logged = null;
 	}
 
@@ -94,12 +95,13 @@ final class modelAuth extends Library {
 	 */
 	private function success($id){
 		$id = (int)$id;
+		# insert or replace row.
 		$this->db->insert('auth_login',array(
 			'uuid'    => UUID,
 			'id_user' => $id,
 			'logged'  => 1,
 			'date'    => date(DATE_W3C)
-		));
+		),  'id');
 		return $this->logged = $id;
 	}
 

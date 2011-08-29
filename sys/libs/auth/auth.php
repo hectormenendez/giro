@@ -10,6 +10,18 @@ abstract class Auth  extends Application_Common {
 	private static $view  = null;
 
 	/**
+	 * Loads everything at once.
+	 *
+	 * @created 2011/AUG/29 14:06
+	 */
+	final public static function control(&$app=false){
+		if (!parent::is_control($app))
+			error('Argument must contain a Control instance.');
+		self::model($app->model);
+		self::view($app->view);
+	}
+
+	/**
 	 * Auth Model driver load.
 	 *
 	 * @created 2011/AUG/25 17:49

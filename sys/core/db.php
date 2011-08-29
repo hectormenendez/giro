@@ -202,24 +202,35 @@ class DB extends Library {
 	 *
 	 * @param req string $table    Table name.
 	 * @param req  array $column   Associative array, keys act as column names.
+	 * @param opt string $update   primary key column name.
+	 *                             If duplicate found, update/replace instead.
 	 *
  	 * @return bool Execution status.
 	 *
+	 * @log     2011/AUG/29 15:10  Added Update fallback,
 	 * @log     2011/AUG/24 19:14  Column will be required to be an array.
 	 * @log     2011/AUG/24 17:47  Renamed $selector to $column.
 	 * @log     2011/AUG/24 17:36  Moved selector checking to its own method.
 	 * @working 2011/AUG/24 15:21
 	 * @created 2011/AUG/24 14:25
 	 */
-	 public function insert($table=false, $column=false){
+	 public function insert($table=false, $column=false, $update=false){
 	 	if (!is_string($table)                    || 
 		 	!($column = $this->column_args($column))
 		) error('Bad arguments for INSERT statement');
 		if (stripos($table, 'INSERT')!==false) return false;
-		$sql = "INSERT INTO $table ("
-				.implode(',', array_keys($column)).") VALUES ("
-				.implode(',', array_fill(0, count($column),'?')).")";
-		return $this->exec($sql, array_values($column));
+
+		$key = array_keys($column);
+		$val = array_fill(0, count($column),'?');
+		$sql = "INSERT INTO $table (".implode(',',$key).") VALUES (".implode(',', $val).') ';
+		# this will return an error if duplicate found
+		if (!is_string($update)) return $this->exec($sql, array_values($column));
+		# prepare update statement
+		$set = implode(',', array_map(function($k,$v){ return "$k=$v"; }, $key, $val));
+		$sql.= "ON DUPLICATE KEY UPDATE $update=LAST_INSERT_ID($update), $set";
+		# the number of replacements has been duplicated.
+		$col = array_merge(array_values($column), array_values($column));
+		return $this->exec($sql, $col);
 	 }
 
 	/**
@@ -489,7 +500,7 @@ class DB extends Library {
 	private function error(&$exception){
 		$e = $exception->getMessage();
 		switch($this->driver){
-			case 'mysql' : $e = substr($e, strrpos($e, ']')+1); break;
+			case 'mysql' : $e = substr($e, strrpos($e, ']')+2); break;
 			case 'sqlite': $e = substr($e,  strpos($e, ':')+1); break;
 		}
 		return error($e);
