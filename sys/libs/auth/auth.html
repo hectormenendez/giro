@@ -12,14 +12,14 @@
 			<input id="user" name="user" type="text" required/>
 		</div>
 		<div>
-			<label for="pass">Constraseña</label>
+			<label for="pass">Contraseña</label>
 			<input id="pass" name="pass" type="password" required/>
 		</div>
 		<input name="token" type="hidden" value="<?=TOKEN_PUBLIC?>"/>
 		<input type="submit" value="Accesar"/>
 		<?php if (AUTH_FAILED): ?>
 		<p>
-			<strong>Credenciales inválidas, intentelo nuevamente.</strong>
+			<strong>Credenciales inválidas.</strong>
 		</p>
 		<?php endif; ?>
 	</form>
