@@ -7,7 +7,7 @@
  * @working 2011/AUG/28 00:00
  * @created 2011/AUG/27 02:39
  */
-final class viewAuth extends Library {
+final class Auth_View extends Library {
 
 	/**
 	 * Load required view

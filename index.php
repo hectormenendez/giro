@@ -4,7 +4,7 @@ define('MEM', memory_get_usage());
 define('BMK', microtime(true));
 
 # This framework is an egomaniac.
-define('VER', 2.104);
+define('VER', 2.105);
 define('BRANCH','palmera');
 define('WHOAMI',ucfirst(BRANCH).' v'.(is_int(VER)? VER.'.0' : substr((string)VER, 0,-2).' REVISION '.substr((string)VER, -2)));
 

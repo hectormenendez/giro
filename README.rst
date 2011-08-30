@@ -1,7 +1,7 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.1r4
+v2.1r5
 ^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
@@ -42,3 +42,4 @@ Changelog
 - DB->insert() now can update upon duplicates, minor Auth update.
 - Fixed a bug where existing external files were being processed as dynamic routes.
 - Naming convention change for Library autoloader.
+- `ISSUE#4 <http://github.com/hectormenendez/giro/issues/4]>`_ Fixing application_external bug by updating Auth to the new library naming convention.

@@ -24,6 +24,8 @@ abstract class Auth  extends Application_Common {
 	/**
 	 * Auth Model driver load.
 	 *
+	 * @log     2011/AUG/29 21:00 Instancing now uses Core::library's autoload.
+	 * @working 2011/AUG/27 23:55
 	 * @created 2011/AUG/25 17:49
 	 */
 	final public static function model(&$app=false){
@@ -53,12 +55,8 @@ abstract class Auth  extends Application_Common {
 				'date' => date(DATE_W3C)
 			)) || error('Could not create admin.');
 		}
-		# include Model Instance Class
-		if (!file_exists($path = strtolower(AUTH.__CLASS__.'.model'.EXT)))
-			error('Internal Model class missing.');
-		include $path;
 		# instantiate and set,
-		self::$model = new modelAuth($db);
+		self::$model = new Auth_Model($db);
 		$app->auth = &self::$model;
 		return true;
 	}
@@ -66,6 +64,8 @@ abstract class Auth  extends Application_Common {
 	/**
 	 * Auth View driver load.
 	 *
+	 * @log     2011/AUG/29 21:00 Instancing now uses Core::library's autoload.
+	 * @working 2011/AUG/27 23:53
 	 * @created 2011/AUG/27 01:59
 	 */
 	final public static function view(&$app=false){
@@ -73,14 +73,10 @@ abstract class Auth  extends Application_Common {
 		if(!parent::is_view($app))
 			error('Argument must contain a View instance.');
 		# make sure model has been instanced
-		if (!self::$model instanceof modelAuth)
+		if (!self::$model instanceof Auth_Model)
 			error('Auth Model was not detected.');
-		# include View Instance Class
-		if (!file_exists($path = strtolower(AUTH.__CLASS__.'.view'.EXT)))
-			error('Internal View class missing.');
-		include $path;
 		# instantiate and set
-		self::$view = new viewAuth(self::$model);
+		self::$view = new Auth_View(self::$model);
 		$app->auth = &self::$view;
 		return true;
 	}

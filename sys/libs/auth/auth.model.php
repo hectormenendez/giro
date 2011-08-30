@@ -5,7 +5,7 @@
  * @working 2011/AUG/27 23:57
  * @created 2011/AUG/26 08:39
  */
-final class modelAuth extends Library {
+final class Auth_Model extends Library {
 
 	private $db    = null;
 
