@@ -130,6 +130,8 @@ class Application_External extends Library {
 		if ($path{strlen($path)-1} == '/') $path = substr($path,0,-1);
 		$src = str_replace('..', '.', "$path/$app.$name.{$this->ext}"); # feeling lazy.
 		if (!file_exists($src)) parent::error_404($msg);
+		# if debug is on, don't compress or cache.
+		if (Core::config('debug')) return $this->render($this->file=$src);
 		# before doing anything verify there's a scope available for this file.
 		$this->scope = Application_View::scope_get($app);
 		if (empty($this->scope)) Library::error_503('Service Unavailable');
