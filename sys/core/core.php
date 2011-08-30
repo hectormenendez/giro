@@ -75,23 +75,39 @@ abstract class Core extends Library {
 	 * required. It also runs static pseudo-constructors, if available.
 	 * It used without arguments, returns an array of loaded classes.
 	 *
-	 * @log 2011/AUG/25 17:06 Libraries can now be stored in it's own directory.
-	 *                        it also creates a constant with the uppercased name
-	 *                        holding appliucation path.
-	 * @return [array] Loaded Library array or sends error.
+	 * @log 2011/AUG/29 21:01 - Naming convention change: class containing
+	 *                          underscores in the name, will be translated to 
+	 *                          dots for file discovery.
+	 *                        - Added support for sub-libraries.
+	 *
+	 * @log 2011/AUG/25 17:06   Libraries can now be stored in it's own directory.
+	 *                          it also creates a constant with the uppercased name
+	 *                          holding appliucation path.
+	 *
+	 * @return array            Loaded Library array or sends error.
 	 */
 	public static function library($name=false){
 		$name = strtolower($name);
 		if (!is_string($name)) return self::$library;
 		if (in_array($name, self::$library)) return true;
+		# for files, all underscores, will be treated as dots.
+		$name = str_replace('_', '.', $name);
 		$found = file_exists($path=CORE.$name.EXT) ||
-				 (
+				      ( # One-File-Library
 				 file_exists($path=LIBS.$name.EXT) &&
 				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH, true)
-				 ) || (
+				 ) || ( # Multi-File-Library
 				 file_exists($path=LIBS.$name.SLASH.$name.EXT) &&
 				 define(strtoupper($name), pathinfo($path, PATHINFO_DIRNAME).SLASH, true)
-				);
+				 ) || ( # Sub-Library
+				 	($sub = substr($name, 0, strpos($name, '.'))) &&
+				 	file_exists($path=LIBS.$sub.SLASH.$name.EXT)  &&
+				 	define(
+					 	strtoupper(str_replace('.', '_', $name)),
+					 	pathinfo($path, PATHINFO_DIRNAME).SLASH, true)
+				 );
+		# restore original naming.
+		$name = str_replace('.', '_', $name);
 		if (!$found) {
 			$rx = '/\w+(control|model|view)/';
 			# If an APP is active, check its folder.

@@ -4,20 +4,19 @@
  * Catches request to pub folder, check if the user is tryng to load a 
  * dynamic file from the framework.
  *
- * @log 2011|MAY|06  QuickFix: GET request were being considered part of the
- *					 file thus sending 404s. When dealing with cache 
- *					 [client side], using GET forces reload, so this was
- *					 most important to fix.
+ * @log 2011/AUG/29 20:24  file renamed due to new convention. [underscore > dot]
  *
- * @log 2011|AGO|20  This was originally Application::external, but it got
- *                   so big I decided to move it to its own class.
+ * @log 2011/AGO/20        This was originally Application::external, but it got
+ *                         so big I decided to move it to its own class.
+ * @log 2011/MAY/06        QuickFix: GET request were being considered part of the
+ *                         file thus sending 404s. When dealing with cache 
+ *                         [client side], using GET forces reload, so this was
+ *                         most important to fix.
  *
- * @note             I know it's a pain that the library doesn't give more 
- *                   informative errors, but since we'll be dealing with app
- *                   files directly, I think security comes first, after all...
- *                   you can alwats use backtracking provided when debug is ON. 
- *
- * @todo cache management
+ * @note                   I know it's a pain that the library doesn't give more 
+ *                         informative errors, but since we'll be dealing with app
+ *                         files directly, I think security comes first, after all...
+ *                         you can alwats use backtracking provided when debug is ON.
  */
 
 class Application_External extends Library {

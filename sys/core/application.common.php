@@ -1,8 +1,9 @@
 <?php
 /**
  * Common methods for Models, Views and Controllers
- *
- * @created 2011/AUG/23:57
+ * @log     2011/AUG/29 20:24 file renamed due to new convention. [underscore > dot]
+ * @working 2011/AUG/27 00:10
+ * @created 2011/AUG/26 23:57
  */
 class Application_Common extends Library {
 

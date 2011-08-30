@@ -1,6 +1,6 @@
 <?php
 /**
- * @todo rename tag methods and make sure they are not passed in App::render()
+ * @log  2011/AUG/29 20:24 file renamed due to new convention. [underscore > dot]
  */
 class Application_View extends Application_Common {
 

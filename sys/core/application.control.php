@@ -1,4 +1,7 @@
 <?php
+/**
+ * @log 2011/AUG/29 20:24 file renamed due to new convention. [underscore > dot]
+ */
 class Application_Control extends Application_Common {
 
 	public $view;

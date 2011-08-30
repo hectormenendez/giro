@@ -1,9 +1,7 @@
 <?php
-
-#include CORE.'application_control'.EXT;
-#include CORE.'application_model'.EXT;
-#include CORE.'application_view'.EXT;
-
+/**
+ * Application Management.
+ */
 class Application extends Library {
 
 	private static $default       = null;
