@@ -1,8 +1,8 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.1
-^^^^
+v2.1r3
+^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
 
@@ -40,3 +40,5 @@ Changelog
 - `v2.1 Changes <http://github.com/hectormenendez/giro/blob/e608fe6d9f62095c376593d3cdb2bc63031c9ba0/README.rst>`_
 - Added Extension Auth, a simple helper for your authentication needs.
 - DB->insert() now can update upon duplicates, minor Auth update.
+- Fixed a bug where existing external files were being processed as dynamic routes.
+

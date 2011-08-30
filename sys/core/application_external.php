@@ -47,14 +47,15 @@ class Application_External extends Library {
 		$this->uri  = str_replace(PUB_URL, '', URI);
 		$this->file = explode('?', str_replace(PUB_URL, PUB, URI));
 		$this->file = array_shift($this->file);
-		# verify that the file is actually allowed to show.
+		# verify mime is allowed to show.
 		if (
 			!is_string($this->ext = pathinfo($this->file, PATHINFO_EXTENSION)) || 
-			!array_key_exists($this->ext, $this->mimes)                        ||
-			!in_array($this->ext, $this->allow))
-			parent::error_404('Not Found');
+			!array_key_exists($this->ext, $this->mimes)
+		) parent::error_404('Not Found');
 		# existent files are processed separatedly.
-		if (file_exists($this->file)) return $this->render(); 
+		if (file_exists($this->file)) return $this->render();
+		# this could be a routing request, verify extension is allowed.
+		if (!in_array($this->ext, $this->allow)) parent::error_403('Not Found');
 		$this->route();
 	}
 
@@ -107,10 +108,7 @@ class Application_External extends Library {
 		else echo file_get_contents($this->file);
 		stop();
 	}
-/*
 
-			in_array($this->ext, $this->allow)) 
-*/
 	/**
 	 * Routes virtual files to its analogs residing on the APP folder.
 	 * Examples:
