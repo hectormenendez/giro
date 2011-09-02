@@ -3,3 +3,7 @@ giro.changelog
 working.changelog
 .hg*
 ./README.mkdn
+
+pub/ui/.git*
+
+.sublime-project.*
