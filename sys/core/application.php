@@ -10,7 +10,7 @@ class Application extends Library {
 	private static $view;
 
 	public static function _construct(){
-		
+
 		if (!is_array(self::$routes = self::config('routes')))
 			error('Bad Routing Configuration.');
 		if (!is_string(self::$default = self::config('default')))
@@ -40,9 +40,9 @@ class Application extends Library {
 		# application assamble:
 		# first model and view, then controller.
 		$null = null;
-		self::$application = self::assamble($args,
-                             self::assamble('model', $null, $null),
-							 self::assamble('view',  $null, $null));
+		$modl              = self::assamble('model',$null, $null);
+		$view              = self::assamble('view' ,$modl, $null);
+		self::$application = self::assamble($args  ,$modl, $view);
 		# render default view after load
 		# user can override this anytime.
 		if (isset(self::$application->view))self::$application->view->render();
@@ -64,7 +64,7 @@ class Application extends Library {
 		if (!is_string($type)) $type = '';
 		if (substr($type,0,1) != '.') $type = empty($type)? EXT : '.'.$type.EXT;
 		$found = file_exists($path = APP.$app.$type) ||
-				 file_exists($path = APP.$app.SLASH.$app.$type);		
+				 file_exists($path = APP.$app.SLASH.$app.$type);
 		if (!$found) return false;
 		return $path;
 	}
@@ -98,7 +98,7 @@ class Application extends Library {
 		if ($inst instanceof Control){
 			$inst->view  = &$view;
 			$inst->model = &$model;
-			# if the user sends an action, check if a public method named like 
+			# if the user sends an action, check if a public method named like
 			# that action exists and call it instead, otherwise, call the usual.
 			if(isset($args[0])){
 				$id = array_shift($args);
@@ -112,6 +112,7 @@ class Application extends Library {
 				else array_unshift($args, $id);
 			}
 		}
+		elseif ($inst instanceof View) $inst->model = &$model;
 		# run pseudo constructor
 		if (method_exists($inst, APP_NAME))
 			call_user_func_array(array($inst, APP_NAME), (array)$args);

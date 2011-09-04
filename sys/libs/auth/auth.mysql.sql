@@ -13,7 +13,7 @@ CREATE TABLE `auth_users`(
   `date`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE `user` (`user`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 
 /**
  * Logged in UUID's
@@ -29,5 +29,5 @@ CREATE TABLE `auth_login`(
   PRIMARY KEY (`id`),
   UNIQUE `id_user` (`id_user`),
   UNIQUE `uuid` (`uuid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1;
 

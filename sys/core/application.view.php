@@ -4,6 +4,8 @@
  */
 class Application_View extends Application_Common {
 
+	public $model = null;
+
 	/**
 	 * View Constuctor
 	 * @created 2011/AUG/26 20:20
@@ -13,7 +15,7 @@ class Application_View extends Application_Common {
 		if (!is_string($path = Application::config('template'))) $path = 'html5';
 		self::$template =  Application::config('template', HTML.$path.'.html');
 		# if run a pseudo constructor if exist.
-		if (method_exists($this, '_construct') && is_callable(array($this,'_construct'))) 
+		if (method_exists($this, '_construct') && is_callable(array($this,'_construct')))
 			return $this->_construct();
 	}
 
@@ -21,7 +23,7 @@ class Application_View extends Application_Common {
 	# using $this->view->cache = true/false from within the Cotroller / View-
 	private static $cache = false;
 
-	# user can specify a template path 
+	# user can specify a template path
 	# it will be parsed with Application::path, so the user only needs to
 	# specify a filename [not even an extension is needed];
 	# the file can be:
@@ -31,7 +33,7 @@ class Application_View extends Application_Common {
 	private static $template = null;
 
 	# user can add head tags byspecifying them using:
-	# this->view->tag_{tagname} = value. 
+	# this->view->tag_{tagname} = value.
 	# or
 	# this->view->tag_{tagtype}(tagname, tagcontent).
 	private static $tags = array(
@@ -115,7 +117,7 @@ class Application_View extends Application_Common {
 		$path = Application::path(is_string($path)? '.'.$path.'.html' : '.html');
 		if (!is_string($path) || !file_exists($path)) stop();
 		# generate a shared scope.
-		# since this view will mostly be shared by external files we've to 
+		# since this view will mostly be shared by external files we've to
 		# be sure all view-variables and functions are available to them too.
 		$_SCOPE = $this->scope();
 		$_SCOPE['path']  = $path;
@@ -131,7 +133,7 @@ class Application_View extends Application_Common {
 		if(self::$cache){
 			header('Cache-Control: must-revalidate,max-age='. (60*60*24));
 			header('Expires: '.gmdate('D, d M Y H:i:s',time()+(60*60*24)).' GMT');
-		} else { 
+		} else {
 			Core::header(200);
 			header('Cache-Control: must-revalidate,no-cache');
 			header('Expires: '.gmdate('D, d M Y H:i:s',time()-(60*60*24*30)).' GMT');
@@ -158,7 +160,7 @@ class Application_View extends Application_Common {
 
 	/**
 	 * Saves the current view scope
-	 * Serialize everything to a file, and add to Core database the expiring 
+	 * Serialize everything to a file, and add to Core database the expiring
 	 * dates, so the garbage control can take care of everything.
 	 */
 	private function scope(){
@@ -168,6 +170,8 @@ class Application_View extends Application_Common {
 			if (false !== strpos($k, ':private')) continue;
 			$vars[$k] = $v;
 		}
+		# remove model
+		unset($vars['model']);
 		# stores only user constants
 		$cons = get_defined_constants(true);
 		$cons = $cons['user'];
@@ -176,7 +180,7 @@ class Application_View extends Application_Common {
 		$funs = array();
 		foreach($meth as $k=>$v) $funs[$k] = base64_encode($v);
 		# prepares the scope to be saved.
-		$scope = serialize(array('funs'=>$funs,'vars'=>$vars,'cons' => $cons)); 
+		$scope = serialize(array('funs'=>$funs,'vars'=>$vars,'cons' => $cons));
 		file_put_contents(TMP.APP_NAME.UUID, $scope);
 		if (!is_int($length = Application::config('scope_length')))
 			error('Bad Scope Length configuration');
@@ -234,7 +238,7 @@ class Application_View extends Application_Common {
 			$template = str_ireplace("<%title%>",$title, $template);
 			unset(self::$tags['vars']['title']);
 		}
-		# is there an analytics tag? 
+		# is there an analytics tag?
 		if (isset(self::$tags['vars']['analytics']) && stripos($template, "<%analytics%>")!==false){
 			# pars the analytics template
 			if (!file_exists(HTML.'analytics.html')) error('Analytics template not found');
@@ -246,7 +250,7 @@ class Application_View extends Application_Common {
 						str_ireplace("<%code%>", self::$tags['vars']['analytics'], $analytics), $template);
 			unset(self::$tags['vars']['analytics']);
 		}
-		# do we even have a head element declared? 
+		# do we even have a head element declared?
 		if (($pos = stripos($template, '</head>'))!==false){
 			$head = array(substr($template, 0, $pos), null, substr($template, $pos));
 			$head[1] = '';
