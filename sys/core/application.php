@@ -99,7 +99,7 @@ class Application extends Library {
 			$inst->view  = &$view;
 			$inst->model = &$model;
 			# if the user sends an action, check if a public method named like
-			# that action exists and call it instead, otherwise, call the usual.
+			# that action exists and call it instead, otherwise, send 404.
 			if(isset($args[0])){
 				$id = array_shift($args);
 				# this is hacky, but short & easy to understand.
@@ -109,7 +109,8 @@ class Application extends Library {
 					call_user_func_array(array($inst,$id), $args);
 					return $inst;
 				}
-				else array_unshift($args, $id);
+				parent::error_404("$id does not exist.");
+				#array_unshift($args, $id);
 			}
 		}
 		elseif ($inst instanceof View) $inst->model = &$model;
@@ -159,7 +160,8 @@ class Application extends Library {
 			$uri = explode("/", $uri);
 			array_shift($uri);
 			$ctrl = array_shift($uri);
-			# clean empty strings. #### WARNING: QUICKFIX ### foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
+			# clean empty strings. #### WARNING: QUICKFIX ###
+			foreach($uri as $k=>$v) if ($v=='') unset($uri[$k]);
 			$uri = array('ctrl'=>$ctrl, 'args'=>$uri);
 		}
 		# uri is empty, trigger default controller.
