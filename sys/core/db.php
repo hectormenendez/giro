@@ -30,7 +30,7 @@ class DB extends Library {
 	 *
 	 * redirects the original static call to an driver-specific cosntructor.
 	 *
-	 * @log 2011/AGO/26 08:02 replaced manual check for Library::samefile()
+	 * @updated 2011/AGO/26 08:02 replaced manual check for Library::samefile()
 	 */
 	public function &__construct(){
 		# Allow only this file to construct the class.
@@ -162,8 +162,8 @@ class DB extends Library {
  	 *               - First Column array, If only one column is specified.
  	 *               - First Row if a LIMIT 1 is specified.
  	 *
- 	 * @log     2011/AUG/27 14:03   Fixed a bug; fetching style was not being restored.
- 	 * @log     2011/AUG/24 17:17   Moved condition checking to its own method.
+ 	 * @updated 2011/AUG/27 14:03   Fixed a bug; fetching style was not being restored.
+ 	 * @updated 2011/AUG/24 17:17   Moved condition checking to its own method.
  	 * @working 2011/AUG/24 14:23
  	 * @created 2011/AUG/24 12:01
  	 */
@@ -200,38 +200,79 @@ class DB extends Library {
  	/**
 	 * INSERT statement shortcut
 	 *
-	 * @param req string $table    Table name.
-	 * @param req  array $column   Associative array, keys act as column names.
-	 * @param opt string $update   primary key column name.
-	 *                             If duplicate found, update/replace instead.
+	 * @param req string $table     Table name.
+	 * @param req  array $column    Associative array or Array of associative arrays, 
+	 *                              keys act as column names.
+	 * @param opt   bool $replace   if a duplicate is found... replace it?
+	 *                              if false, an error will be triggered on duplicate.
 	 *
  	 * @return bool Execution status.
-	 *
-	 * @log     2011/AUG/29 15:10  Added Update fallback,
-	 * @log     2011/AUG/24 19:14  Column will be required to be an array.
-	 * @log     2011/AUG/24 17:47  Renamed $selector to $column.
-	 * @log     2011/AUG/24 17:36  Moved selector checking to its own method.
+ 	 *
+ 	 * @note   For some reason, if you use a large set of rows, an error will 
+ 	 *         trigger, it seems that innoDB has to do with it.
+ 	 *         I've read that changing a setting in mySQL config can fix it:
+ 	 *         /etc/my.cfg  innodb_lock_wait_timeout = 50 [increase it]
+ 	 *
+ 	 *         Since the whole idea of this framework is to work in a shared
+ 	 *         environment, changing settings like those will be impossible.
+ 	 *         so, until I figure this out, I would recommend using this method
+ 	 *         for small/single inserts.
+ 	 *
+ 	 *         But please, if you read this, stress-test this method and let me know.
+ 	 *         if it works.
+ 	 *         ----- UPDATE -----
+ 	 *         It seems that restarting my server was enough for the error to 
+ 	 *         appear, so it might be that a bad insert when developing was the
+ 	 *         one to blame for it.
+ 	 *         Anyways, I'm leaving this message until I debug a little more, 
+ 	 *         also, this needs to be tested in a production environment.
+ 	 *         I'll remove this, once I'm sure it was a human error an not 
+ 	 *         a memory leak caused by my poor programming skills.
+ 	 *
+ 	 * @updated 2011/SEP/16 03:58   Updated note.
+ 	 * @updated 2011/SEP/16 03:15   Added note.
+	 * @updated 2011/SEP/16 01:33   Insert multiple rows enabled.
+	 *                              Enhanced row replacement. [untested]
+	 * @updated 2011/AUG/29 15:10   Added Update fallback,
+	 * @updated 2011/AUG/24 19:14   Column will be required to be an array.
+	 * @updated 2011/AUG/24 17:47   Renamed $selector to $column.
+	 * @updated 2011/AUG/24 17:36   Moved selector checking to its own method.
 	 * @working 2011/AUG/24 15:21
 	 * @created 2011/AUG/24 14:25
 	 */
-	 public function insert($table=false, $column=false, $update=false){
+	public function insert($table=false, $column=false, $replace=false){
 	 	if (!is_string($table)                    || 
 		 	!($column = $this->column_args($column))
 		) error('Bad arguments for INSERT statement');
 		if (stripos($table, 'INSERT')!==false) return false;
-
-		$key = array_keys($column);
-		$val = array_fill(0, count($column),'?');
-		$sql = "INSERT INTO $table (".implode(',',$key).") VALUES (".implode(',', $val).') ';
-		# this will return an error if duplicate found
-		if (!is_string($update)) return $this->exec($sql, array_values($column));
-		# prepare update statement
-		$set = implode(',', array_map(function($k,$v){ return "$k=$v"; }, $key, $val));
-		$sql.= "ON DUPLICATE KEY UPDATE $update=LAST_INSERT_ID($update), $set";
-		# the number of replacements has been duplicated.
-		$col = array_merge(array_values($column), array_values($column));
-		return $this->exec($sql, $col);
-	 }
+		# all arrays must share the same key names.
+		$key = array_keys(current($column));
+		# populate sql with key names.
+		$sql = "INSERT INTO `$table` (".implode(',',array_map(function($a){return "`$a`";},$key)).") VALUES ";
+		# value set, with replacement placemarks.
+		$row = '('.implode(',', array_fill(0, count($key),'?')).')';
+		$rows = array();
+		$vals = array();
+		// now, the value generation.
+		foreach ($column as $col) {
+			if (array_keys($col) !== $key) return error('All arrays must have the same key set.');
+			$rows[] = $row;
+			$vals   = array_merge($vals, array_values($col));
+		}
+		$sql .= implode(', ', $rows).' ';
+		// if no replacing is needed, just execute sql now.
+		if (!$replace) return $this->exec($sql, $vals);
+		// prepare on duplicate statement
+		$prikey = $this->primary_key($table);
+		$sql .= "ON DUPLICATE KEY UPDATE $prikey=LAST_INSERT_ID('$prikey'), ";
+		$sets = array();
+		foreach($key as $k){
+			if ($k == $prikey) continue;
+			$sets[] = "`$k`=VALUES(`$k`)";
+		}
+		$sql .= implode(', ', $sets);
+		return $this->exec($sql, $vals);
+	}
 
 	/**
 	 * UPDATE statement shortcut
@@ -243,6 +284,8 @@ class DB extends Library {
  	 *
  	 * @return bool Execution status.
  	 *
+ 	 * @updated 2011/SEP/16 01:37   Column_args now returns an array of arrays;
+ 	 *         	                    But we'll only use the first one.
 	 * @working 2011/AUG/24 20:26
 	 * @created 2011/AUG/24 16:37
 	 */
@@ -251,6 +294,7 @@ class DB extends Library {
 		 	!($column = $this->column_args($column))
 		) error('Bad arguments for UPDATE statement');
 		if (stripos($table, 'UPDATE')!==false) return false;
+		$column = current($column);
 		$keys = implode(',',array_map(function($a){ return $a.'=?';}, array_keys($column)));
 		$sql = "UPDATE $table SET $keys";
 		# if no condition is  given, execute query now.
@@ -324,7 +368,7 @@ class DB extends Library {
 	 *
 	 * @return bool          Wether commit was succesful or not.
 	 *
-	 * @log 2011/AUG/26 15:32 It now executes lines by line inside a transaction.
+	 * @updated 2011/AUG/26 15:32 It now executes lines by line inside a transaction.
 	 */
 	public function import($path=false){
 		if (!is_string($path) || !file_exists($path))
@@ -392,6 +436,18 @@ class DB extends Library {
 		return (bool)$this->instance->query($sql)->fetchColumn();
 	}
 
+	/**
+	 * Returns the Primary Key Column name.
+	 * @author Hector Menendez <h@cun.mx>
+	 * @licence http://etor.mx/licence.txt
+	 * @created 2011/SEP/16 00:49
+	 */
+	private function primary_key($table=false){
+	 	if (!is_string($table)) error('A table name is required.');
+	 	$qry = $this->query("SHOW KEYS FROM $table WHERE Key_name='PRIMARY'");
+	 	return $qry[0]['Column_name'];
+	}
+
 
 	/**
 	 * Preparing statements.
@@ -430,44 +486,34 @@ class DB extends Library {
 
 
 	/**
-	 * Validates Arguments for 
-	 * Allows a method to accept column names and a replacement value for it
-	 * assigned in two manners:
-	 *
-	 * 1) As an array
+	 * Makes sure a valid column declaration is being passed as an associative
+	 * array of column names and their respective value. It can also be an array
+	 * of arrays. example:
+	 * 
 	 *    method('table', array(
-	 *      'col1' => 666,
+	 *      'col1' =>  666,
 	 *      'col2' => 'sss'
      *    ));
-	 * 2) As a single string with single replacement:
-	 *    method('table', 'col1', 666);
-	 *
-	 * @note The second form seemed like a good idea at the begginning but it 
-	 *       implementing it in a constant way, was more than difficult.
-	 *       Methods will be using the first form, and I'll leave the second 
-	 *       untouched if I think of a clever way to implement both,
-	 * 
-	 * @log     2011/AUG/24 19:27 Added description and example.
+	 * @updated 2011/SEP/16 02:49 Removed string support & improved array checking.
+	 * @updated 2011/SEP/15 23:43 Added Array of arrays support.
+	 * @updated 2011/AUG/24 19:27 Added description and example.
 	 * @working 2011/AUG/24 17:44 Moved from $this->insert()
 	 * @created 2011/AUG/24 16:38
 	 */
-	private function column_args($column, $value=null){
-	 	if  ( 
-		 	# column can only be array or string
-		 	(!is_string($column) && !is_array($column))                              ||
-		 	# column is string, must contain a value
-		 	(is_string($column) && empty($value))                                    ||
-		 	# value set, column must only specify one column
-		 	(!empty($value) && (!is_string($column) || strpos($column,',')!==false)) ||
-		 	# column is array, must have values
-		 	(is_array($column) && empty($column))                                    ||
-		 	# column is array, no $value must be set
-		 	(is_array($column) && !empty($value))                                    ||
-		 	# column is array, it must be associative
-		 	(is_array($column) && array_keys($column) === range(0,count($column)-1))
+	private function column_args($col=false){
+		if (!is_array($col) ||  empty($col)) return false;
+		$count  = count($col);
+		$allarr = ($count == count(array_filter($col, function($a){return is_array($a);})));
+		if (
+			# column is filled with non_arrays, but... is it associative?
+			(!$allarr && !Utils::is_assoc($col))
+			# column is filled with arrays, it must not be associative.
+		||	($allarr && Utils::is_assoc($col))
+			# column is filled with arrays, each array must be associative 
+		||	($allarr && $count != count(array_filter($col, function($a){return Utils::is_assoc($a);})))
 		) return false;
-		# unify selector
-		return is_string($column)? array($column => $value) : $column;
+		# be consistent.
+		return ($allarr? $col : array($col));
 	}
 
  	/**
