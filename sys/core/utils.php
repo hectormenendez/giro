@@ -7,6 +7,17 @@
 abstract class Utils extends Library {
 
 	/**
+	 * Is the argument an associative array?
+	 * @author Hector Menendez <h@cun.mx>
+	 * @licence http://etor.mx/licence.txt
+	 * @created 2011/SEP/16 02:26
+	 */
+	public static function is_assoc($array=array()){
+		if (!is_array($array)) return false;
+		return array_keys($array) !== range(0,count($array)-1);
+	}
+
+	/**
 	 * Returns the first word of any string.
 	 *
 	 * @created 2011/AUG/26 16:17
