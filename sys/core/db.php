@@ -295,7 +295,7 @@ class DB extends Library {
 		) error('Bad arguments for UPDATE statement');
 		if (stripos($table, 'UPDATE')!==false) return false;
 		$column = current($column);
-		$keys = implode(',',array_map(function($a){ return $a.'=?';}, array_keys($column)));
+		$keys = implode(',',array_map(function($a){ return "`$a`=?";}, array_keys($column)));
 		$sql = "UPDATE $table SET $keys";
 		# if no condition is  given, execute query now.
 		if (!$this->is_condition($condition)) return $this->exec($sql, array_values($column));
