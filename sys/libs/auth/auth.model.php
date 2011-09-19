@@ -71,6 +71,31 @@ final class Auth_Model extends Library {
 	}
 
 	/**
+	 * Checks if given password is valid.
+	 * or Sets a new password.
+	 * @created 2011/SEP/19 01:53
+	 */
+	public function password($pass=false, $new=false){
+		if (!$this->logged || ($pass !== true && !is_string($pass))) return false;
+		# check validity
+		elseif (is_string($pass) && !is_string($new)){
+			$pass = sha1($pass);
+			$qry = $this->db->select(
+				'auth_users','id',
+				'id=? AND pass=? LIMIT 1',$this->logged, $pass
+			);
+			return !empty($qry);
+		}
+		elseif ($pass == true && is_string($new)){
+			return $this->db->update(
+				'auth_users',
+				array('pass' => sha1($new)),'id=?', $this->logged);
+		}
+		return false;
+	}
+
+
+	/**
 	 * Write on database when a user fails to login.
 	 *
 	 * @working 2011/AUG/27 23:56
