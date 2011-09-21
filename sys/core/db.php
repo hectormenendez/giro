@@ -162,6 +162,7 @@ class DB extends Library {
  	 *               - First Column array, If only one column is specified.
  	 *               - First Row if a LIMIT 1 is specified.
  	 *
+ 	 * @updated 2011/SEP/21 17:01   Selector is now being quoted.
  	 * @updated 2011/AUG/27 14:03   Fixed a bug; fetching style was not being restored.
  	 * @updated 2011/AUG/24 17:17   Moved condition checking to its own method.
  	 * @working 2011/AUG/24 14:23
@@ -169,6 +170,7 @@ class DB extends Library {
  	 */
  	public function select($table=false, $selector=false, $condition='', $values=null){
  		if (!$selector) $selector = '*';
+ 		$selector = trim($selector);
  		if (
 	 		!is_string($table)    || 
 	 		!is_string($selector) ||
@@ -176,11 +178,18 @@ class DB extends Library {
 	 	) error('Bad arguments for SELECT statement');
 	 	# store current fetching style
 	 	$fetching = $this->fetching;
+	 	if (strpos($selector, '*') === false){
+			# make sure selector is well quoted.
+	 		$selector = explode(',', $selector);
+	 		foreach($selector as $i=>$s) 
+	 			if (strpos($s, '(') === false) $selector[$i] = '`'.trim($s).'`';
+	 		$selector = implode(',', $selector );
+			# selector only has one column? return only that.
+	 		if (strpos($selector, ',') === false)
+	 			$this->fetching = DB::FETCH_COLUMN;
+	 	}
 	 	# start building statment.
-	 	$sql = "SELECT $selector FROM $table";
-	 	# selector only has one column? return only that.
-	 	if (trim($selector) != '*' && strpos($selector, ',')===false)
-	 		$this->fetching = DB::FETCH_COLUMN;
+	 	$sql = "SELECT $selector FROM $table";	 		
 	 	# there are no conditions: query, restore original fetching and return
 	 	if (empty($condition)) return $this->queryandfetch($sql, $fetching);
 	 	# do we really need to add a WHERE statement? 
