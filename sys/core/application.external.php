@@ -103,9 +103,9 @@ class Application_External extends Library {
 			stripos($_SERVER['HTTP_ACCEPT_ENCODING'],'gzip') !== false){
 			# compressing mayhem
 			ob_start('ob_gzhandler',(int)Application::config('compression'));
-			echo file_get_contents($this->file);
+			include $this->file;
 		}
-		else echo file_get_contents($this->file);
+		else include $this->file;
 		stop();
 	}
 
@@ -132,7 +132,10 @@ class Application_External extends Library {
 		$src = str_replace('..', '.', "$path/$app.$name.{$this->ext}"); # feeling lazy.
 		if (!file_exists($src)) parent::error_404($msg);
 		# if debug is on, don't compress or cache.
-		if (Core::config('debug')) return $this->render($this->file=$src);
+		if (Core::config('debug')) {
+			$this->file = $src;
+			return $this->render();
+		}
 		# before doing anything verify there's a scope available for this file.
 		$this->scope = Application_View::scope_get($app);
 		if (empty($this->scope)) Library::error_503('Service Unavailable');
