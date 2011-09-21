@@ -133,10 +133,13 @@ class Application_View extends Application_Common {
 		if(self::$cache){
 			header('Cache-Control: must-revalidate,max-age='. (60*60*24));
 			header('Expires: '.gmdate('D, d M Y H:i:s',time()+(60*60*24)).' GMT');
+			header("Last-Modified: " . gmdate("D, d M Y H:i:s", filemtime($_SCOPE['cont'])) . " GMT");
 		} else {
 			Core::header(200);
-			header('Cache-Control: must-revalidate,no-cache');
 			header('Expires: '.gmdate('D, d M Y H:i:s',time()-(60*60*24*30)).' GMT');
+			header('Cache-Control: private, no-store, no-cache, must-revalidate');
+			header('Cache-Control: post-check=0, pre-check=0', false);
+			header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); // Always modified
 		}
 		# parse content with clean scope.
 		ob_start();

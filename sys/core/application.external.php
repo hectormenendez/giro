@@ -80,12 +80,13 @@ class Application_External extends Library {
 			$db->exec($sql, $mtime, (int)BMK, $this->file);
 			$dtime = -1;
 		}
-		header('Cache-Control: must-revalidate'.($dtime==-1?', no-cache, no-store,post-check=0,pre-check=0':''));
+		header('Cache-Control: must-revalidate');
 		header('Expires: '.gmdate('D, d M Y H:i:s',time()+($dtime*(60*60))).' GMT');
 		header('Last-Modified: '.gmdate('D, d M Y H:i:s', $mtime).' GMT', true);
 		# no cache then
 		if ($dtime === -1){
 			Core::header(200);
+			header('Cache-control: private, no-cache, no-store, post-check=0, pre-check=0');
 			header('Pragma: no-cache');
 		}
 		# not modified
