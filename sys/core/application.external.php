@@ -61,7 +61,7 @@ class Application_External extends Library {
 	/**
 	 * Render file to browser handling headers according to its modified time.
 	 */
-	private function render(){
+	private function render($dynamic=false){
 		Core::headers_remove();
 		header('Content-Type: '.$this->mimes[$this->ext].'; charset:UTF-8');
 		$dtime = 1; # direction of time 1 = future; -1 = past;
@@ -103,9 +103,9 @@ class Application_External extends Library {
 			stripos($_SERVER['HTTP_ACCEPT_ENCODING'],'gzip') !== false){
 			# compressing mayhem
 			ob_start('ob_gzhandler',(int)Application::config('compression'));
-			include $this->file;
-		}
-		else include $this->file;
+		} 
+		else ob_start();
+		if ($dynamic) include $this->file; else echo file_get_contents($this->file);
 		stop();
 	}
 
@@ -134,7 +134,7 @@ class Application_External extends Library {
 		# if debug is on, don't compress or cache.
 		if (Core::config('debug')) {
 			$this->file = $src;
-			return $this->render();
+			return $this->render(true);
 		}
 		# before doing anything verify there's a scope available for this file.
 		$this->scope = Application_View::scope_get($app);
@@ -151,7 +151,7 @@ class Application_External extends Library {
 			return $this->compress($src, $tmp, $src_mtime);
 		# the file has not changed serve cached version.
 		$this->file = $tmp;
-		$this->render();
+		$this->render(true);
 	}
 
 	/**
