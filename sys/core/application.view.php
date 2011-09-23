@@ -81,7 +81,7 @@ class Application_View extends Application_Common {
 		# set template
 		elseif(strtolower($key)=='template'){
 			unset($this->$key);
-			if (!is_string($val = Application::path($val.'.html')))
+			if (!is_string($val = Application::path('.template')))
 				$val = Application::config('template');
 			self::$template = $val;
 			return null;
@@ -116,6 +116,12 @@ class Application_View extends Application_Common {
 		# if that doesn't exists either, just stop.
 		$path = Application::path(is_string($path)? '.'.$path.'.html' : '.html');
 		if (!is_string($path) || !file_exists($path)) stop();
+		# Allow the user send a closure to run before render.
+		if (isset($this->onrender)){
+			$_SCOPE = $this->onrender;
+			if (is_callable($_SCOPE)) $_SCOPE($this);
+			unset($this->onrender); # serialization of closure is forbidden.
+		}
 		# generate a shared scope.
 		# since this view will mostly be shared by external files we've to
 		# be sure all view-variables and functions are available to them too.
