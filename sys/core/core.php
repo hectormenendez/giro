@@ -405,6 +405,11 @@ abstract class Core extends Library {
 	private static function uri_parse($key='REQUEST_URI'){
 		if (!isset($_SERVER[$key]) || $_SERVER[$key]=='')
 			error('The URI is unavailable [crap].');
+		# permanently redirect request  containing a trailing slash
+		if (substr($_SERVER[$key], -1) == '/') {
+			header ('HTTP/1.1 301 Moved Permanently');
+			header ('Location: '.substr($_SERVER[$key], 0, -1));
+		}
 		# catch calls to pub dir, and parse them differently.
 		define('URI', str_replace(BASE,'',$_SERVER[$key]));
 	}
