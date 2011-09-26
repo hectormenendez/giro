@@ -59,7 +59,7 @@ foreach ($_E as $k=>$v){
 }
 
 # Extension, got from this file name. All included script must match it.
-define('EXT', BASE == ($ext = substr(BASE, strpos(BASE,'.')))? '' : $ext);
+define('EXT', '.'.pathinfo(BASE, PATHINFO_EXTENSION));
 # Framework's relative path and url. Avoid these when in CLI.
 define('PATH',IS_CLI? '/' : str_replace($_SERVER['DOCUMENT_ROOT'],'',ROOT));
 
@@ -92,7 +92,8 @@ unset($x, $k,$v,$ext,$_E);
 # if this file was included by another script, stop to avoid infinite loops.
 if (IS_INC) return;
 
-if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT)) error();
+if (!file_exists(CORE.'library'.EXT) || !file_exists(CORE.'core'.EXT))
+	error('Missing Core');
 include_once CORE.'library'.EXT;
 include_once CORE.'core'.EXT;
 Core::_construct();
