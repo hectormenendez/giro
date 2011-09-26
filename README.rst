@@ -1,8 +1,8 @@
 ====================================
 GIRO Codename Palmera, PHP Framework
 ====================================
-v2.1r8
-^^^^^^
+v2.1r24
+^^^^^^^
 
 This is by no means a complete solution, it is by far a work in progress and it must be considered ALPHA software, since it hasn't been tested outside my production and testing environments.
 
@@ -20,18 +20,12 @@ Dependencies
 Installation
 ------------
 - Clone to any directory [or to any folder and then make a symlink] on your web server.
-- create a directory named tmp.
 - if you are [really] "lucky" it will show you a notice triggered from the default controller.
-
-Notes
------
-- Remember to check the .htaccess file, It is not optimized.
 
 TODO
 ----
-- Test this latest commit on production. [I know, I know]
 - Allow users to disable minify OR compress via config.
-- Allow users to force the realoading of external view files. [auto deleting temp file after framework stopped].
+- Allow users to force the reloading of external view files. [auto deleting temp file after framework stopped].
 - Get rid of the Instance Library, it's stupid and an overkill.
 
 Changelog
@@ -46,3 +40,19 @@ Changelog
 - Enabled debug mode for dynamic files in Applicaion_External.
 - Auth now uses InnoDB; Model is now visible for Views.
 - Fixed Application routing bug, and reactivated old quickfix for empty URI strings.
+- Added Utils::is_assoc().
+- Added multi-row support to DB::insert().
+- Column names were not being quoted correctly on DB->update().
+- Auth::Model->password() for checking / setting current password.
+- Fixed Cache setting for non-cacheable requests.
+- External files are parsed agaare being parsed by php again.
+- Reverted error sending when application sub method is not found.
+- Static files fallback.
+- Select 'selectors' are now being quoted.
+- All files on root folder are visible by default now; everything else hidden.
+- Fixed View->template property; Enabled View->onrender closure.~
+- Added missing <%js%> replacement on main template.
+- All trailing slashes will now be 301-redirected.
+- Fixed a redirection loop in root.
+- Fixed a silly extension-grabbing bug.
+- Small fix to gitignore.

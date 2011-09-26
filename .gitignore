@@ -4,5 +4,5 @@ working.changelog
 .hg*
 ./README.mkdn
 
-.sublime-project.*
+.sublime-project*
 .todo
