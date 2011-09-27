@@ -98,18 +98,16 @@ class Application extends Library {
 		if ($inst instanceof Control){
 			$inst->view  = &$view;
 			$inst->model = &$model;
-			# if the user sends an action, check if a public method named like
-			# that action exists and call it instead, otherwise, carry on.
-			if(isset($args[0])){
-				$id = array_shift($args);
-				# this is hacky, but short & easy to understand.
-				($id == APP_NAME || !method_exists($inst, $id)) ||
-				($do = new ReflectionMethod($inst, $id)) && ($do = $do->isPublic());
-				if (!empty($do)){
-					call_user_func_array(array($inst,$id), $args);
+			# if the user sends actions, check if a public method named like
+			# those actions exist and call it instead, otherwise, carry on.
+			$count = count($args);
+			for ($i=0; $i<$count; $i++){
+				$copy = $i==0? $args : array_slice($args,0,-1*$i);
+				$name = join('_', $copy);
+				if (self::ispublic($inst, $name)){
+					call_user_func_array(array($inst, $name), array_slice($args,$count-$i));
 					return $inst;
 				}
-				array_unshift($args, $id);
 			}
 		}
 		elseif ($inst instanceof View) $inst->model = &$model;
@@ -119,6 +117,29 @@ class Application extends Library {
 		return $inst;
 	}
 
+	/**
+	 * Find a public method. Hacky, but short and easy to understand.
+	 * @author Hector Menendez <h@cun.mx>
+	 * @licence http://etor.mx/licence.txt
+	 * @created 2011/SEP/27 11:32
+	 */
+	private static function ispublic(&$instance, $name){
+		(
+			$name == APP_NAME
+		||
+			# ignore methods whose name starts like the app itself.
+			substr($name, 0, strpos($name, '_')) == APP_NAME
+		||
+			!method_exists($instance, $name)
+		||
+			(
+				($is = new ReflectionMethod($instance, $name))
+			&&
+				($is = $is->isPublic())
+			)
+		);
+		return !empty($is);
+	}
 
 
 	/**
