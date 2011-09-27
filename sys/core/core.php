@@ -410,6 +410,7 @@ abstract class Core extends Library {
 		if (!empty($tmp) &&	substr($_SERVER[$key], -1) == '/') {
 			header ('HTTP/1.1 301 Moved Permanently');
 			header ('Location: '.substr($_SERVER[$key], 0, -1));
+			stop();
 		}
 		# catch calls to pub dir, and parse them differently.
 		define('URI', str_replace(BASE,'',$_SERVER[$key]));
