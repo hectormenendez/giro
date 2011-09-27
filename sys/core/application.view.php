@@ -91,6 +91,21 @@ class Application_View extends Application_Common {
 		return $this->$key;
 	}
 
+	/**
+	 * View loader.
+	 * replicates global scope.
+	 * @created 2011/SEP/27 14:32
+	 */
+	public static function load($_VIEW){
+		if (!($_VIEW = Application::path(".$_VIEW.html")))
+			error("'".ucwords($_VIEW)."' is not a valid View.");
+		# make globals available.
+		extract($GLOBALS, EXTR_REFS);
+		ob_start();
+		include $_VIEW;
+		return ob_get_clean();
+	}
+
 	private static $rendered = null;
 
 	/**
@@ -101,12 +116,13 @@ class Application_View extends Application_Common {
 	 * @param string           Name of view, following the name space:
 	 *                             APP_PATH/APP_NAME.{name}.html
 	 *
-	 * @note                   - No need of adding extension or any path.
-	 *                         - If omited, it will look for the default view,
-	 *                         - if it doesn't exist, it will just stop execution.
+	 * @note                       - No need of adding extension or any path.
+	 *                             - If omited, it will look for the default view,
+	 *                             - if it doesn't exist, it will just stop execution.
 	 *
-	 * @log 2011/AUG/26 18:54  - Fixed a bug, trailing "dot" wasn't being added.
-	 *                         - Added comments and note.
+	 * @updated 2011/SEP/27 14:33  - All globals starting with underscore are now unset.
+	 * @updated 2011/AUG/26 18:54  - Fixed a bug, trailing "dot" wasn't being added.
+	 *                             - Added comments and note.
 	 */
 	public function render($path = null){
 		# this method can only run once.
@@ -126,10 +142,17 @@ class Application_View extends Application_Common {
 		# since this view will mostly be shared by external files we've to
 		# be sure all view-variables and functions are available to them too.
 		$_SCOPE = $this->scope();
-		$_SCOPE['path']  = $path;
+		# $_SERVER won't be available after this, so I have to use it here.
+		$_SCOPE['gzip'] = stripos($_SERVER['HTTP_ACCEPT_ENCODING'],'gzip') !== false;
+		$_SCOPE['path'] = $path;
 		$_SCOPE['cont'] = array($this->template_ini(), null, $this->template_end());
 		foreach($_SCOPE['funs'] as $v) eval($v);
-		foreach($_SCOPE['vars'] as $k=>$v) $$k=$v;
+		foreach($_SCOPE['vars'] as $k=>$v) {
+			$$k=$v;
+			$GLOBALS[$k] = $v; # make vars available to global scope.
+		}
+		# get rid of important globals, as they are parsed from the controller and model.
+		foreach($GLOBALS as $k=>$v) if ($k{0} == '_') unset($GLOBALS[$k]);
 		unset($k,$v,$this,$path);
 		# prepare headers for render.
 		Core::headers_remove();
@@ -156,8 +179,7 @@ class Application_View extends Application_Common {
 		# if available use zlib to compress the generated html.
 		# ob_gzhandler doesn't like getting ob_end_flush calls, so just output
 		# the buffer and let PHP's destruction process handle the rest.
-		if (extension_loaded('zlib')                                &&
-			stripos($_SERVER['HTTP_ACCEPT_ENCODING'],'gzip') !== false) {
+		if (extension_loaded('zlib') && $_SCOPE['gzip']) {
 			ob_start('ob_gzhandler',(int)Application::config('compression'));
 			ob_start();
 			echo $content;
