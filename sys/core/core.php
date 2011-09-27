@@ -137,6 +137,11 @@ abstract class Core extends Library {
 		foreach (array_reverse(self::$library) as $l){
 			if (method_exists($l,'_destruct')) call_user_func("$l::_destruct");
 		}
+		if (!Core::config('debug')) return;
+		file_put_contents(TMP.'benchmark',
+			'Microtime: '.(string)(microtime(true) - BMK)."\n".
+			'Peak Mem : '.(string)(memory_get_peak_usage(true)/1024)." Kb\n"
+		);
 	}	
 
 	private static $language = null;
