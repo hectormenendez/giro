@@ -251,9 +251,9 @@ class Application_View extends Application_Common {
 		# add automagically css & js for the app, unless...
 		if (Application::config('tags_auto')){
 			if ($path = Application::path('.css'))
-				$this->tag_link('stylesheet', PUB_URL.APP_NAME.'.css');
+				$this->tag_linkself('stylesheet', PUB_URL.APP_NAME.'.css');
 			if ($path = Application::path('.js'))
-				$this->tag_js(PUB_URL.APP_NAME.'.js');
+				$this->tag_jsself(PUB_URL.APP_NAME.'.js');
 		}
 		# parse template and include it.
 		@ob_end_clean();
@@ -319,12 +319,14 @@ class Application_View extends Application_Common {
 		  case 'meta':
 			$tag = "<meta name='$key' content='$val'>";
 			break;
-		  case 'jsini':
-		  case 'jsend':
-		  case    'js':
+		  case  'jsini':
+		  case  'jsend':
+		  case 'jsself':
+		  case     'js':
 			$tag = "<script src='$key'></script>";
 			break;
-		  case 'link':
+		  case     'link':
+		  case 'linkself':
 			$tag = "<link rel='$key' href='$val'>";
 			break;
 		  default:
